@@ -9,24 +9,12 @@
 class LBM { // Lattice Boltzmann Method class
 
     private:
-        ulong N; // Number of lattice cells
+        ulong N=1u; // Number of lattice cells
         uint Nx=1u, Ny=1u, Nz=1u; // (global) lattice dimensions
+        uint step = 0u; // Current time step
         float nu = 0.1f; // kinematic viscosity
         bool initialized = false; // Defines if the LBM object has been initialized
-        // Add a function to verify errors and warnings on initialization
-
-    public:                
-        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu); // Constructor
-
-        // Getters
-        uint get_Nx() { return Nx; }
-        uint get_Ny() { return Ny; }
-        uint get_Nz() { return Nz; }
-        float get_nu() { return nu; }
-
-
-        // Setters
-
+         
         void check_erros() { // Check for errors and warnings
             if (!initialized) {
                 std::cerr << "LBM object not initialized. Call LBM::initialize() before calling this function." << std::endl;
@@ -37,9 +25,26 @@ class LBM { // Lattice Boltzmann Method class
         #endif // D2Q9
         };  // check_erros()
 
-
         void initialize();  // Initialize the LBM object
 
-
         void advance_in_time(); // Perform one LBM time step -> collision -> boundary conditions -> streaming
+
+        void collision(); // Collision step
+
+        void boundary_conditions(); // Boundary conditions
+
+        void streaming(); // Streaming step
+
+    public:                
+        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu); // Constructor
+
+        // Getters
+        uint get_Nx() { return Nx; }
+        uint get_Ny() { return Ny; }
+        uint get_Nz() { return Nz; }
+        float get_nu() { return nu; }
+        ulong get_N() { return Nx*Ny*Nz;}
+
+        // Setters
+        void run(const uint timesteps); // Run the LBM simulation       
 };

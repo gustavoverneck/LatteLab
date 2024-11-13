@@ -14,7 +14,7 @@ g++ src/*.cpp -o bin/LatteLab -std=c++17
 
 # Check if compilation was successful
 if [ $? -eq 0 ]; then
-    echo "Compilation successful. Executable is located at 'build/output'"
+    echo "Compilation successful. Executable is located at 'bin/LatteLab'."
     echo "Running the program..."
     ./bin/LatteLab
     

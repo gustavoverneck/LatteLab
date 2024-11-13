@@ -21,6 +21,8 @@ using namespace std;
 // Constants
 #define pif 3.1415927f
 #define pi 3.14159265358979323846
+#define dt 1.0f
+#define dx 1.0f
 #define inf_float as_float(0x7F800000)
 #define nan_float as_float(0xFFFFFFFF)
 #define inf_double as_double(0x7FF0000000000000)
