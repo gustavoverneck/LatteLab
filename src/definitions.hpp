@@ -4,6 +4,7 @@
 To select any of the following simulation types or setting, uncomment the corresponding line
 */
 
+
 /*
     Simulation type: SIM_FLUID or SIM_PLASMA
 */
@@ -56,5 +57,71 @@ Graphical visualization
 #define TYPE_P 0b01000000 // plasma cell
 
 
-// Variables definition
+
+
+// ---------------------------------------------------------------------------------------------------------
+
+// Typedefs
 typedef unsigned int uint;
+typedef unsigned long ulong;
+
+
+// -----------------------------------------------------------------------------------------------
+
+// Define the velocities and dimensions for each lattice type
+#if defined(D2Q9)
+    const uint velocities = 9;
+    const uint dimensions = 2;
+    // Lattice velocity set
+    const int c[9][2] = {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
+    // Lattice weights
+    #define def_w0 (1.0f/2.25f)     // center (0)
+	#define def_ws (1.0f/9.0f)      // straight (1-4)
+	#define def_we (1.0f/36.0f)     // edge (5-8)
+#elif defined(D3Q15)
+    const uint velocities = 15;
+    const uint dimensions = 3;
+    // Lattice velocity set
+    const int c[15][3] = {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1}};
+    // Lattice weights
+    #define def_w0 (1.0f/4.5f)      // center (0)
+	#define def_ws (1.0f/9.0f)      // straight (1-6)
+	#define def_wc (1.0f/72.0f)     // corner (7-14)
+#elif defined(D3Q19)
+    const uint velocities = 19;
+    const uint dimensions = 3;
+    // Lattice velocity set
+    const int c[19][3] = {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1}};
+    // Lattice weights
+    #define def_w0 (1.0f/3.0f)      // center (0)
+	#define def_ws (1.0f/18.0f)     // straight (1-6)
+	#define def_we (1.0f/36.0f)     // edge (7-18)
+#elif defined(D3Q27)
+    const uint velocities = 27;
+    const uint dimensions = 3;
+    // Lattice velocity set
+    const int c[27][3] = {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1},{1,1,1},{-1,1,1},{-1,-1,1},{1,-1,1},{1,1,-1},{-1,1,-1},{-1,-1,-1},{1,-1,-1}};
+    // Lattice weights
+    #define def_w0 (1.0f/3.375f)    // center (0)
+	#define def_ws (1.0f/13.5f)     // straight (1-6)
+	#define def_we (1.0f/54.0f)     // edge (7-18)
+	#define def_wc (1.0f/216.0f)    // corner (19-26)
+#endif
+
+// -----------------------------------------------------------------------------------------------
+// Security checks
+
+// Ensure only one lattice type is defined
+#if (defined(D2Q9) + defined(D3Q15) + defined(D3Q19) + defined(D3Q27)) > 1
+    #error "Multiple lattice types defined. Please define only one lattice type."
+#endif
+
+// Ensure only one collision operator is defined
+#if (defined(BGK) + defined(TRT) + defined(MRT)) > 1
+    #error "Multiple collision operators defined. Please define only one collision operator."
+#endif
+
+// Ensure only one simulation type is defined
+#if (defined(SIM_FLUID) + defined(SIM_PLASMA)) > 1
+    #error "Multiple simulation types defined. Please define only one simulation type."
+#endif

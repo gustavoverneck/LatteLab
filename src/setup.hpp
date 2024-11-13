@@ -5,6 +5,4 @@
 #include "lbm.hpp"
 
 
-void sim_setup () {
-    
-}; // main_setup for the lbm simulation
+void main_setup(); // main_setup for the lbm simulation
