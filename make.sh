@@ -10,12 +10,16 @@ rm -rf bin/LatteLab
 
 # Compile the code
 echo "Compiling the code..."
+start_time=$(date +%s%3N)  # Capture the start time in milliseconds
 g++ src/*.cpp -o bin/LatteLab -std=c++17
-
+end_time=$(date +%s%3N)    # Capture the end time in milliseconds
+duration=$(( end_time - start_time ))  # Calculate the duration in milliseconds
+seconds=$(echo "scale=3; $duration / 1000" | bc)
 # Check if compilation was successful
 if [ $? -eq 0 ]; then
-    echo "Compilation successful. Executable is located at 'bin/LatteLab'."
-    echo "Running the program..."
+    echo "Compilation successful. Executable is located at 'bin/LatteLab'. Compiling time: $seconds seconds."
+    echo "Executing LatteLab..."
+    echo " "
     ./bin/LatteLab
     
 else

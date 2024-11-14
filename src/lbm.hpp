@@ -3,6 +3,7 @@
 
 #include "definitions.hpp"
 #include "units.hpp"
+#include "utilities.hpp"
 
 
 
@@ -14,14 +15,15 @@ class LBM { // Lattice Boltzmann Method class
         uint step = 0u; // Current time step
         float nu = 0.1f; // kinematic viscosity
         bool initialized = false; // Defines if the LBM object has been initialized
-         
+        unsigned int num_threads = std::thread::hardware_concurrency(); // Number of threads to be used in the simulation
+
         void check_erros() { // Check for errors and warnings
             if (!initialized) {
                 std::cerr << "LBM object not initialized. Call LBM::initialize() before calling this function." << std::endl;
                 return;
             };
         #ifdef D2Q9
-            if(Nz!=1u) std::cerr << "D2Q9 is the 2D velocity set. You have to set Nz=1u in the LBM constructor! Currently you have set Nz="+to_string(Nz)+"u." << std::endl;
+            if(Nz!=1u) std::cerr << "D2Q9 can not have Nz=1u! Change it in the constructor." << std::endl;
         #endif // D2Q9
         };  // check_erros()
 
@@ -36,7 +38,7 @@ class LBM { // Lattice Boltzmann Method class
         void streaming(); // Streaming step
 
     public:                
-        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu); // Constructor
+        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint num_threads); // Constructor
 
         // Getters
         uint get_Nx() { return Nx; }
@@ -46,5 +48,7 @@ class LBM { // Lattice Boltzmann Method class
         ulong get_N() { return Nx*Ny*Nz;}
 
         // Setters
+        void start(); // Start the LBM simulation
+
         void run(const uint timesteps); // Run the LBM simulation       
 };
