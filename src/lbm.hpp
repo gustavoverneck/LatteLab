@@ -46,9 +46,22 @@ class LBM { // Lattice Boltzmann Method class
         uint get_Nz() { return Nz; }
         float get_nu() { return nu; }
         ulong get_N() { return Nx*Ny*Nz;}
+        uint get_num_threads() { return num_threads; }
+        uint get_step() { return step; }
+
 
         // Setters
         void start(); // Start the LBM simulation
 
-        void run(const uint timesteps); // Run the LBM simulation       
+        void run(const uint timesteps); // Run the LBM simulation
+
+        // Constructors of variables
+        vector<vector<double>> f; // Distribution functions
+        vector<vector<double>> f_eq; // Distribution functions
+        vector<double> rho; // Density
+        vector<vector<double>> u; // Velocity
+        vector<vector<double>> g; // Distribution functions
+        vector<vector<double>> g_eq; // Distribution functions
+        vector<vector<double>> E; // Electric field
+        vector<vector<double>> B; // Magnetic field
 };
