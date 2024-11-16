@@ -78,6 +78,8 @@ typedef unsigned long ulong;
     #define def_w0 (1.0f/2.25f)     // center (0)
 	#define def_ws (1.0f/9.0f)      // straight (1-4)
 	#define def_we (1.0f/36.0f)     // edge (5-8)
+    #define def_w {def_w0, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we}  // Weights
+
 #elif defined(D3Q15)
     const uint velocities = 15;
     const uint dimensions = 3;
@@ -87,6 +89,8 @@ typedef unsigned long ulong;
     #define def_w0 (1.0f/4.5f)      // center (0)
 	#define def_ws (1.0f/9.0f)      // straight (1-6)
 	#define def_wc (1.0f/72.0f)     // corner (7-14)
+    #define def_w {def_w0, def_ws, def_ws, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we}
+
 #elif defined(D3Q19)
     const uint velocities = 19;
     const uint dimensions = 3;
@@ -96,6 +100,8 @@ typedef unsigned long ulong;
     #define def_w0 (1.0f/3.0f)      // center (0)
 	#define def_ws (1.0f/18.0f)     // straight (1-6)
 	#define def_we (1.0f/36.0f)     // edge (7-18)
+    #define def_w {def_w0, def_ws, def_ws, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we}
+
 #elif defined(D3Q27)
     const uint velocities = 27;
     const uint dimensions = 3;
@@ -106,6 +112,8 @@ typedef unsigned long ulong;
 	#define def_ws (1.0f/13.5f)     // straight (1-6)
 	#define def_we (1.0f/54.0f)     // edge (7-18)
 	#define def_wc (1.0f/216.0f)    // corner (19-26)
+    #define def_w {def_w0, def_ws, def_ws, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc}
+
 #endif
 
 // -----------------------------------------------------------------------------------------------

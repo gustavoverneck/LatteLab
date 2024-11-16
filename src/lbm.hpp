@@ -29,13 +29,17 @@ class LBM { // Lattice Boltzmann Method class
 
         void initialize();  // Initialize the LBM object
 
-        void advance_in_time(); // Perform one LBM time step -> collision -> boundary conditions -> streaming
+        void evolve(); // Perform one LBM time step -> collision -> boundary conditions -> streaming
 
         void collision(); // Collision step
 
         void boundary_conditions(); // Boundary conditions
 
         void streaming(); // Streaming step
+
+        void collision_task(int start, int end); // Collision step task
+
+        void streaming_task(int start, int end); // Streaming step task
 
     public:                
         LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint num_threads); // Constructor
@@ -55,13 +59,17 @@ class LBM { // Lattice Boltzmann Method class
 
         void run(const uint timesteps); // Run the LBM simulation
 
+        void export_data(); // Export data to a file
+
         // Constructors of variables
         vector<vector<double>> f; // Distribution functions
         vector<vector<double>> f_eq; // Distribution functions
         vector<double> rho; // Density
-        vector<vector<double>> u; // Velocity
+//        vector<vector<double>> u; // Velocity
         vector<vector<double>> g; // Distribution functions
         vector<vector<double>> g_eq; // Distribution functions
         vector<vector<double>> E; // Electric field
         vector<vector<double>> B; // Magnetic field
+        vector<double> w = def_w; // Weights
+        vector<uint> flags; // Flags for each cell
 };
