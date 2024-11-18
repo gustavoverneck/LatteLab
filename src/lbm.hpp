@@ -17,18 +17,6 @@ class LBM { // Lattice Boltzmann Method class
         bool initialized = false; // Defines if the LBM object has been initialized
         unsigned int num_threads = std::thread::hardware_concurrency(); // Number of threads to be used in the simulation
 
-        void check_erros() { // Check for errors and warnings
-            if (!initialized) {
-                std::cerr << "LBM object not initialized. Call LBM::initialize() before calling this function." << std::endl;
-                return;
-            };
-        #ifdef D2Q9
-            if(Nz!=1u) std::cerr << "D2Q9 can not have Nz=1u! Change it in the constructor." << std::endl;
-        #endif // D2Q9
-        };  // check_erros()
-
-        void initialize();  // Initialize the LBM object
-
         void evolve(); // Perform one LBM time step -> collision -> boundary conditions -> streaming
 
         void collision(); // Collision step
@@ -40,6 +28,8 @@ class LBM { // Lattice Boltzmann Method class
         void collision_task(int start, int end); // Collision step task
 
         void streaming_task(int start, int end); // Streaming step task
+
+        void check_erros(); // Check for errors and warnings
 
     public:                
         LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint num_threads); // Constructor
@@ -64,12 +54,12 @@ class LBM { // Lattice Boltzmann Method class
         // Constructors of variables
         vector<vector<double>> f; // Distribution functions
         vector<vector<double>> f_eq; // Distribution functions
+        vector<vector<double>> f_temp; // Distribution functions (temporary)
         vector<double> rho; // Density
-//        vector<vector<double>> u; // Velocity
+        vector<vector<double>> u; // Velocity
         vector<vector<double>> g; // Distribution functions
         vector<vector<double>> g_eq; // Distribution functions
         vector<vector<double>> E; // Electric field
         vector<vector<double>> B; // Magnetic field
-        vector<double> w = def_w; // Weights
         vector<uint> flags; // Flags for each cell
 };

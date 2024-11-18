@@ -7,7 +7,7 @@ void main_setup() { // main_setup for the lbm simulation
     const float nu = 0.1f;
     const uint N = Nx*Ny*Nz;
     const uint num_threads = 8u;
-    const uint timesteps = 100u;
+    const uint timesteps = 1u;
     
 
     LBM lbm(Nx, Ny, Nz, nu, num_threads); // Create the LBM object
@@ -20,10 +20,17 @@ void main_setup() { // main_setup for the lbm simulation
         float z = result[2];
         if (x == 0 || x == Nx-1 || y == 0 || y == Ny-1) {
             lbm.flags[n] = TYPE_S;
-        } else if (x == 2) {
+            lbm.rho[n] = 0.0f;
+            lbm.u[n][0] = 0.0f;
+            lbm.u[n][1] = 0.0f;
+        } else if (x == 1) {
             lbm.rho[n] = 1.0f;
+            lbm.u[n][0] = 0.1f;
+            lbm.u[n][1] = 0.0f;
         } else {
             lbm.rho[n] = 0.1f;
+            lbm.u[n][0] = 0.0f;
+            lbm.u[n][1] = 0.0f;
         }
     };
 

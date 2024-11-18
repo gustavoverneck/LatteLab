@@ -70,15 +70,16 @@ typedef unsigned long ulong;
 
 // Define the velocities and dimensions for each lattice type
 #if defined(D2Q9)
-    const uint velocities = 9;
-    const uint dimensions = 2;
+    #define velocities 9
+    #define dimensions 2
+    #define dt 1.0f // Time step
     // Lattice velocity set
     const int c[9][2] = {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
     // Lattice weights
     #define def_w0 (1.0f/2.25f)     // center (0)
 	#define def_ws (1.0f/9.0f)      // straight (1-4)
 	#define def_we (1.0f/36.0f)     // edge (5-8)
-    #define def_w {def_w0, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we}  // Weights
+    const double w[velocities] = {def_w0, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we};  // Weights
 
 #elif defined(D3Q15)
     const uint velocities = 15;
