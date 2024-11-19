@@ -8,8 +8,8 @@ To select any of the following simulation types or setting, uncomment the corres
 /*
     Simulation type: SIM_FLUID or SIM_PLASMA
 */
-    //#define SIM_PLASMA
     #define SIM_FLUID
+    //#define SIM_PLASMA
 
 
 /*
@@ -48,13 +48,14 @@ Graphical visualization
 // Other definitions
 
 // Types definition to bitwise operations
-#define TYPE_S 0b00000001 // (stationary or moving) solid boundary
-#define TYPE_E 0b00000010 // equilibrium boundary (inflow/outflow)
-#define TYPE_T 0b00000100 // temperature boundary
-#define TYPE_F 0b00001000 // fluid cell
-#define TYPE_I 0b00010000 // interface cell
-#define TYPE_G 0b00100000 // gas cell
-#define TYPE_P 0b01000000 // plasma cell
+#define     TYPE_S      0b00000001  // solid boundary
+#define     TYPE_IN     0b00000010  // inflow boundary
+#define     TYPE_OUT    0b00000100  // equilibrium boundary (inflow/outflow)
+#define     TYPE_T      0b00001000  // temperature boundary
+#define     TYPE_F      0b00010000  // fluid cell
+#define     TYPE_I      0b00100000  // interface cell
+#define     TYPE_G      0b01000000  // gas cell
+#define     TYPE_P      0b10000000  // plasma cell
 
 
 
@@ -74,7 +75,7 @@ typedef unsigned long ulong;
     #define dimensions 2
     #define dt 1.0f // Time step
     // Lattice velocity set
-    const int c[9][2] = {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
+    
     // Lattice weights
     #define def_w0 (1.0f/2.25f)     // center (0)
 	#define def_ws (1.0f/9.0f)      // straight (1-4)

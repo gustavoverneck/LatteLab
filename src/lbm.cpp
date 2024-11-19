@@ -1,39 +1,62 @@
 #include "lbm.hpp"
 #include <functional>
 
+/** LBM
+ * @brief Constructs an LBM object with the given dimensions and viscosity.
+ * 
+ * @param Nx The number of cells in the x-dimension.
+ * @param Ny The number of cells in the y-dimension.
+ * @param Nz The number of cells in the z-dimension.
+ * @param nu The kinematic viscosity of the fluid.
+ */
+LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu) 
+    :Nx(Nx), Ny(Ny), Nz(Nz), nu(nu) {
+        this->start();
+} // LBM
 
-LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint num_threads) 
-    :Nx(Nx), Ny(Ny), Nz(Nz), nu(nu), num_threads(num_threads) {
 
-        // Initialize the lattice
+/** init
+ * @brief Initializes the Lattice Boltzmann Method (LBM) simulation.
+ * 
+ * This function sets up the lattice structure, distribution functions, density,
+ * velocity, and other necessary variables for the LBM simulation based on the 
+ * defined lattice type (D2Q9, D3Q15, D3Q19, D3Q27) and simulation type (SIM_FLUID, SIM_PLASMA).
+ * 
+ * @note The lattice type and simulation type must be defined in the definitions.hpp file.
+ * 
+ * @details
+ * - Initializes the lattice cells count (N) based on the dimensions (Nx, Ny, Nz).
+ * - Sets the lattice velocity vectors (c) according to the defined lattice type.
+ * - Initializes distribution functions (f, f_eq, f_temp) and other variables (rho, flags, u)
+ *   for fluid simulations.
+ * - Initializes additional distribution functions (g, g_eq, g_temp) and fields (E, B)
+ *   for plasma simulations.
+ * - Sets the initialized flag to true upon successful initialization.
+ * 
+ * @throws std::runtime_error if the lattice type is not defined.
+ */
+void LBM::init() {
+// Initialize the lattice
         cout << "Initializing variables...\n";
         this->N = Nx*Ny*Nz; // Number of lattice cells
+
+        #ifdef D2Q9
+            this->c = vector<vector<int>> {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
+        #elif defined(D3Q15)
+            this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1}};
+        #elif defined(D3Q19)
+            this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1}};
+        #elif defined(D3Q27)
+            this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1},{1,1,1},{-1,1,1},{-1,-1,1},{1,-1,1},{1,1,-1},{-1,1,-1},{-1,-1,-1},{1,-1,-1}};
+        #endif
 
         #if defined(SIM_FLUID)
             this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
             this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
             this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->rho = vector<double> (N, 0.0f); // Density
+            this->rho = vector<double> (N, 1.0f); // Density
             this->flags = vector<uint> (N, 0u); // Flags for each cell
             this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
-
-            // Setups grid with initial conditions
-            for (int n = 0; n < N; n++) {
-                // Calculate the velocity
-
-                
-                // Calculate the equilibrium distribution
-                for (int i = 0; i < velocities; i++) {
-                    double uu = this->u[n][0] * this->u[n][0] + this->u[n][1] * this->u[n][1];
-                    double cu = c[i][0] * this->u[n][0] + c[i][1] * this->u[n][1];
-                    this->f_eq[n][i] = w[i] * this->rho[n] * (1.0f + (3.0f * cu)/cs2 + (9.0f * cu * cu)/(2.0f*cs*cs)  - (3.0f * uu)/(2.0f*cs2));
-                }
-
-                // Perform the collision step
-                for (int i = 0; i < velocities; i++) {
-                    this->f[n][i] = this->f[n][i] + (this->f_eq[n][i] - this->f[n][i]) * dt;
-                }
-        }
 
         #elif defined(SIM_PLASMA)
             this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
@@ -56,10 +79,12 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint
         #endif
 
         // Set the initialized flag to true
-        initialized = true;
-}
+        this->initialized = true;
+} // init
+
 
  // ---------------------------------------------------------------------------------------------------------
+
 
 /** check_erros
  * @brief Checks for errors and warnings in the LBM object.
@@ -75,40 +100,48 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint
  */
 void LBM::check_erros() { // Check for errors and warnings
 
-            if (!initialized) {
-                std::cerr << "LBM object not initialized. Call LBM::initialize() before calling this function." << std::endl;
-                return;
-            };
-        #ifdef D2Q9
-            if(Nz!=1u) std::cerr << "D2Q9 can not have Nz=1u! Change it in the constructor." << std::endl;
-        #endif // D2Q9
+    if (!this->initialized) {
+        std::cerr << "LBM object not initialized. Call LBM::initialize() before calling this function." << std::endl;
+        return;
+    };
+    #ifdef D2Q9
+        if(Nz!=1u) std::cerr << "D2Q9 can not have Nz=1u! Change it in the constructor." << std::endl;
+    #endif // D2Q9
 }  // check_erros()
 
 
 // ---------------------------------------------------------------------------------------------------------
 
-void LBM::collision_task(int start, int end) {
-    
-}
 
-// ---------------------------------------------------------------------------------------------------------
-
-void LBM::streaming_task(int start, int end) {
-    
-}
-
-// ---------------------------------------------------------------------------------------------------------
-
-
+/** start
+ * @brief Starts the LBM (Lattice Boltzmann Method) simulation.
+ * 
+ * This function initializes the LBM simulation by performing the following steps:
+ * 1. Prints the logo.
+ * 2. Outputs a message indicating the start of the simulation.
+ * 3. Calls the init() function to initialize the simulation parameters.
+ * 4. Calls the check_erros() function to verify if there are any errors before running the simulation.
+ */
 void LBM::start() {
     print_logo();
     cout << "Starting LBM simulation...\n";
+    this->init();
     this->check_erros();
-} // Run the LBM simulation
+} // start
+
 
 // ---------------------------------------------------------------------------------------------------------
 
 
+/**
+ * @brief Runs the LBM (Lattice Boltzmann Method) simulation for a specified number of timesteps.
+ *
+ * This function initializes the simulation step to zero and then iteratively evolves the simulation
+ * state until the specified number of timesteps is reached. It prints a message indicating the start
+ * of the simulation and the total number of timesteps to be executed.
+ *
+ * @param timesteps The number of timesteps to run the simulation for.
+ */
 void LBM::run(const uint timesteps) {
     this->step = 0u;
     cout << "Running LBM simulation for " << timesteps << " timesteps...\n";
@@ -116,65 +149,118 @@ void LBM::run(const uint timesteps) {
         this->step++;
         this->evolve();
     }
-} // Run the LBM simulation
+} // run
+
 
 // ---------------------------------------------------------------------------------------------------------
 
 
+/** evolve
+ * @brief Perform one Lattice Boltzmann Method (LBM) time step.
+ *
+ * This function executes a single time step of the LBM simulation. The process
+ * involves three main stages:
+ * 1. Collision: Handles the collision step where particle distribution functions
+ *    are updated based on local interactions.
+ * 2. Boundary Conditions: Applies the necessary boundary conditions to the
+ *    simulation domain.
+ * 3. Streaming: Updates the particle distribution functions by streaming them
+ *    to neighboring nodes.
+ */
 void LBM::evolve() { // Perform one LBM time step -> collision -> boundary conditions -> streaming
     this->collision();
-    this->boundary_conditions();
+    //this->boundary_conditions();
     this->streaming();
-}
+} // evolve
 
 // ---------------------------------------------------------------------------------------------------------
+
+/** compute_feq
+ * @brief Computes the equilibrium distribution function (f_eq) for a given node.
+ *
+ * This function calculates the equilibrium distribution function for a given node
+ * in the lattice Boltzmann method (LBM) simulation. The computation is based on
+ * the fluid velocity and density at the node.
+ *
+ * @param n The index of the node for which the equilibrium distribution function is computed.
+  */
+void LBM::compute_feq(const uint n) {
+    for (int i = 0; i < velocities; i++) {
+        double uc = (this->u[n][0] * this->c[i][0] + this->u[n][1] * this->c[i][1]);
+        this->f_eq[n][i] = w[i] * this->rho[n] *(1 + 3.0f * uc + 4.5f * uc * uc - 1.5f * (this->u[n][0] * this->u[n][0] + this->u[n][1] * this->u[n][1]));
+    };
+} // compute_feq
+
+// ---------------------------------------------------------------------------------------------------------
+
+#if defined(SIM_PLASMA)
+    void LBM::compute_geq(const uint n) {
+
+    } // compute_geq
+#endif
+
+// ---------------------------------------------------------------------------------------------------------
+
+
+
+
+
+// ---------------------------------------------------------------------------------------------------------
+
+
+
 
 
 /** collision
- * @brief Perform the collision step for the Lattice Boltzmann Method (LBM).
+ * @brief Perform the collision step of the Lattice Boltzmann Method (LBM).
  *
- * This function executes the collision step of the LBM simulation. Depending on the 
- * defined simulation type (SIM_FLUID or SIM_PLASMA), it calculates the density, 
- * velocity, equilibrium distribution, and updates the distribution functions.
+ * This function executes the collision step, which is a crucial part of the LBM simulation.
+ * It computes the density and velocity for each cell and updates the distribution functions.
+ * The collision step is parallelized using OpenMP to improve performance.
  *
- * @note This function uses multi-threading to parallelize the collision step.
+ * @note This function handles different simulation types based on preprocessor directives.
+ *       - SIM_FLUID: Fluid simulation
+ *       - SIM_PLASMA: Plasma simulation (logic not implemented)
+ *       - If neither is defined, an error message is printed.
  *
- * @details
- * - For SIM_FLUID:
- *   - Calculates the density and velocity for each lattice point.
- *   - Computes the equilibrium distribution function.
- *   - Updates the distribution function using the collision step.
- * - For SIM_PLASMA:
- *   - Calculates the density for each lattice point.
- *   - Updates the electric and magnetic fields.
- *   - Computes the velocity for each lattice point.
- *   - Computes the equilibrium distribution functions for both f and g.
- *   - Updates the distribution functions f and g using the collision step.
- *
- * @throws std::runtime_error if the lattice type is not defined.
+ * @warning Ensure that the lattice type is defined before calling this function.
  */
 void LBM::collision() {              // Collision step
     #if defined(SIM_FLUID)
-        std::vector<std::thread> threads;
-        int chunk_size = this->N / this->num_threads;
+        // Parallelize the collision task using OpenMP
+        #pragma omp parallel for
+        for (uint n = 0; n < this->N; n++) {
+            for (int i = 0; i < velocities; i++) {
+                this->f[n][i] = this->rho[n] * this->f[n][i];
+            }
+            if (this->flags[n] == TYPE_S || this->flags[n] == TYPE_IN || this->flags[n] == TYPE_OUT) continue; // Skip solid and in/out cells
+            // Compute density and velocity for each cell
+            this->rho[n] = 0.0f;
+            this->u[n][0] = 0.0f;
+            this->u[n][1] = 0.0f;
+            for (int i = 0; i < velocities; i++) {
+                this->rho[n] += this->f[n][i];
+                this->u[n][0] += this->f[n][i] * this->c[i][0];
+                this->u[n][1] += this->f[n][i] * this->c[i][1];
+            }
+            if (this->rho[n] > 1e-10) {
+                this->u[n][0] /= this->rho[n];
+                this->u[n][1] /= this->rho[n];
+            }
 
-        for (uint t = 0; t < this->num_threads; ++t) {
-            int start = t * chunk_size;
-            int end = (t == this->num_threads - 1) ? this->N : start + chunk_size;
-            threads.emplace_back(std::bind(&LBM::collision_task, this, start, end));
+            this->compute_feq(n);
+            for (int i = 0; i < velocities; i++) {
+                this->f[n][i] = this->f_eq[n][i] + (1.0f - 1.0f / this->nu) * (this->f[n][i] - this->f_eq[n][i]);
+            }
         };
 
-        for (auto& thread : threads) {
-            thread.join();
-        };
-    
     #elif defined(SIM_PLASMA)
-        
+        // Plasma simulation logic goes here
     #else
-        std::cerr << "Error: Lattice type not defined. Please define a lattice type in the definitions.hpp file." << std::endl;
+        std::cerr << "Error: Lattice type not defined." << std::endl;
         return;
     #endif
-} 
+}  // collision
 
 // ---------------------------------------------------------------------------------------------------------
 
@@ -184,11 +270,11 @@ void LBM::collision() {              // Collision step
  * This function iterates through all cells in the simulation domain and applies the appropriate
  * boundary conditions based on the cell type. The boundary conditions include:
  * 
- * - Solid boundary (flags[index] == 1): Applies the bounce-back boundary condition where the
+ * - Solid boundary (flags[index] == TYPE_S): Applies the bounce-back boundary condition where the
  *   distribution function is reflected back.
- * - Inlet boundary (flags[index] == 2): Sets the distribution function based on a desired inlet
+ * - Inlet boundary (flags[index] == TYPE_IN): Sets the distribution function based on a desired inlet
  *   density and velocity using the equilibrium distribution function.
- * - Outlet boundary (flags[index] == 3): Applies a simple outflow condition where the distribution
+ * - Outlet boundary (flags[index] == TYPE_OUT): Applies a simple outflow condition where the distribution
  *   function is copied from the adjacent cell in the inflow direction.
  *
  * Additional boundary conditions can be added as needed.
@@ -199,43 +285,53 @@ void LBM::boundary_conditions() {    // Boundary conditions
 
 // ---------------------------------------------------------------------------------------------------------
 
-/** streaming
- * @brief Performs the streaming step of the Lattice Boltzmann Method (LBM).
- * 
- * This function executes the streaming step in parallel using multiple threads.
- * Each thread processes a chunk of the data array, performing the streaming
- * operation for each cell within its assigned range.
- * 
- * The streaming operation typically involves updating the distribution functions
- * based on the equilibrium distribution functions or other streaming logic.
- * 
- * The number of threads used is determined by the `num_threads` member variable,
- * and the data array size is determined by the `N` member variable.
- * 
- * The function ensures that all threads complete their work by joining them
- * before returning.
- */
+
 void LBM::streaming() { // Streaming step
+    #if defined(SIM_FLUID)
 
-    std::vector<std::thread> threads;
-    int chunk_size = this->N / num_threads;
+        #if defined(D2Q9)
+            //this->f_temp = this->f;
 
-    for (uint t = 0; t < num_threads; ++t) {
-        int start = t * chunk_size;
-        int end = (t == num_threads - 1) ? this->N : start + chunk_size;
-        threads.emplace_back(std::bind(&LBM::streaming_task, this, start, end));
-    };
-    
-    for (auto& thread : threads) {
-            thread.join();
-        }; 
-    
-    for (int n = 0; n < N; ++n) {
-        for (int i = 0; i < velocities; ++i) {
-            this->f[n][i] = this->f_temp[n][i];
-        }
-    }
+            // Streaming step
+            #pragma omp parallel for
+            for (int j = Ny - 1; j >= 1; --j) {
+                for (int i = 0; i < Nx - 1; ++i) {
+                    this->f[i + Nx * j][2] = this->f[i + Nx * (j - 1)][2];
+                    this->f[i + Nx * j][6] = this->f[(i + 1) + Nx * (j - 1)][6];
+                }
+            }
+            for (int j = Ny - 1; j >= 1; --j) {
+                for (int i = Nx - 1; i >= 1; --i) {
+                    this->f[i + Nx * j][1] = this->f[(i - 1) + Nx * j][1];
+                    this->f[i + Nx * j][5] = this->f[(i - 1) + Nx * (j - 1)][5];
+                }
+            }
+            for (int j = 0; j < Ny - 1; ++j) {
+                for (int i = Nx - 1; i >= 1; --i) {
+                    this->f[i + Nx * j][4] = this->f[i + Nx * (j + 1)][4];
+                    this->f[i + Nx * j][8] = this->f[(i - 1) + Nx * (j + 1)][8];
+                }
+            }
+            for (int j = 0; j < Ny - 1; ++j) {
+                for (int i = 0; i < Nx - 1; ++i) {
+                    this->f[i + Nx * j][3] = this->f[(i + 1) + Nx * j][3];
+                    this->f[i + Nx * j][7] = this->f[(i + 1) + Nx * (j + 1)][7];
+                }
+            }
+        #elif defined(D3Q15)
+        #elif defined(D3Q19)
+        #elif defined(D3Q27)
+        #endif
+    #elif defined(SIM_PLASMA)
+        // Plasma simulation logic goes here
+    #else
+        std::cerr << "Error: Lattice type not defined." << std::endl;
+        return;
+    #endif
 }
+
+// ---------------------------------------------------------------------------------------------------------
+
 
 // ---------------------------------------------------------------------------------------------------------
 

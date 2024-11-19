@@ -6,7 +6,6 @@
 #include "utilities.hpp"
 
 
-
 class LBM { // Lattice Boltzmann Method class
 
     private:
@@ -15,7 +14,6 @@ class LBM { // Lattice Boltzmann Method class
         uint step = 0u; // Current time step
         float nu = 0.1f; // kinematic viscosity
         bool initialized = false; // Defines if the LBM object has been initialized
-        unsigned int num_threads = std::thread::hardware_concurrency(); // Number of threads to be used in the simulation
 
         void evolve(); // Perform one LBM time step -> collision -> boundary conditions -> streaming
 
@@ -29,10 +27,23 @@ class LBM { // Lattice Boltzmann Method class
 
         void streaming_task(int start, int end); // Streaming step task
 
-        void check_erros(); // Check for errors and warnings
+        void check_erros(); // Check for errors and warnings3
+
+        void init(); // Initialize LBM's objects;
+
+        void compute_feq(const uint n); // Compute the equilibrium distribution function
+
+        #if defined(SIM_PLASMA)
+            void compute_geq(const uint n); // Compute the equilibrium distribution function for g
+        #endif
+
+        void setup_render(); // Setup the rendering for the LBM simulation
+
+        void display(); // Render the LBM simulation
+
 
     public:                
-        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, const uint num_threads); // Constructor
+        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu); // Constructor
 
         // Getters
         uint get_Nx() { return Nx; }
@@ -40,8 +51,8 @@ class LBM { // Lattice Boltzmann Method class
         uint get_Nz() { return Nz; }
         float get_nu() { return nu; }
         ulong get_N() { return Nx*Ny*Nz;}
-        uint get_num_threads() { return num_threads; }
         uint get_step() { return step; }
+        float get_rho(const uint n) { return rho[n]; }
 
 
         // Setters
@@ -62,4 +73,5 @@ class LBM { // Lattice Boltzmann Method class
         vector<vector<double>> E; // Electric field
         vector<vector<double>> B; // Magnetic field
         vector<uint> flags; // Flags for each cell
+        vector<vector<int>> c; // Lattice velocity set
 };

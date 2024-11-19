@@ -9,7 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
-#include <thread>
+#include <omp.h>
 
 #include "units.hpp"
 // ---------------------------------------------------------------------------------------------------------
@@ -183,7 +183,117 @@ inline vector<uint> getNeighbors(uint n, uint Nx, uint Ny, uint Nz) {
     return neighbors;
 };
 
+// ---------------------------------------------------------------------------------------------------------
+/** getOpositeDirection
+ * @brief Returns the opposite direction index for a given direction index.
+ *
+ * This function determines the opposite direction index based on the 
+ * defined lattice model (D2Q9, D3Q15, D3Q19, or D3Q27). The opposite 
+ * direction index is used in lattice Boltzmann methods to identify 
+ * the reverse direction of a given direction.
+ *
+ * @param i The direction index for which the opposite direction is needed.
+ * @return The opposite direction index if the input index is valid, 
+ *         otherwise returns -1.
+ *
+ * @note The valid range of the input index depends on the defined lattice model:
+ *       - D2Q9: valid indices are 0 to 8
+ *       - D3Q15: valid indices are 0 to 14
+ *       - D3Q19: valid indices are 0 to 18
+ *       - D3Q27: valid indices are 0 to 26
+ */
+inline int getOpositeDirection(int i) {
+    #if defined(D2Q9)   
+        switch (i) {
+            case 0: return 0;
+            case 1: return 3;
+            case 2: return 4;
+            case 3: return 1;
+            case 4: return 2;
+            case 5: return 8;
+            case 6: return 7;
+            case 7: return 6;
+            case 8: return 5;
+            default: return -1;
+        }
+    #elif defined(D3Q15)
+        switch (i) {
+            case 0: return 0;
+            case 1: return 3;
+            case 2: return 4;
+            case 3: return 1;
+            case 4: return 2;
+            case 5: return 8;
+            case 6: return 7;
+            case 7: return 6;
+            case 8: return 5;
+            case 9: return 14;
+            case 10: return 13;
+            case 11: return 12;
+            case 12: return 11;
+            case 13: return 10;
+            case 14: return 9;
+            default: return -1;
+        }
+    
+    #elif defined(D3Q19)
+        switch (i) {
+            case 0: return 0;
+            case 1: return 3;
+            case 2: return 4;
+            case 3: return 1;
+            case 4: return 2;
+            case 5: return 8;
+            case 6: return 7;
+            case 7: return 6;
+            case 8: return 5;
+            case 9: return 14;
+            case 10: return 13;
+            case 11: return 12;
+            case 12: return 11;
+            case 13: return 10;
+            case 14: return 9;
+            case 15: return 18;
+            case 16: return 17;
+            case 17: return 16;
+            case 18: return 15;
+            default: return -1;
+        }
+    
+    #elif defined(D3Q27)
+        switch (i) {
+            case 0: return 0;
+            case 1: return 3;
+            case 2: return 4;
+            case 3: return 1;
+            case 4: return 2;
+            case 5: return 8;
+            case 6: return 7;
+            case 7: return 6;
+            case 8: return 5;
+            case 9: return 14;
+            case 10: return 13;
+            case 11: return 12;
+            case 12: return 11;
+            case 13: return 10;
+            case 14: return 9;
+            case 15: return 18;
+            case 16: return 17;
+            case 17: return 16;
+            case 18: return 15;
+            case 19: return 26;
+            case 20: return 25;
+            case 21: return 24;
+            case 22: return 23;
+            case 23: return 22;
+            case 24: return 21;
+            case 25: return 20;
+            case 26: return 19;
+            default: return -1;
+        }
 
+    #endif
+};
 
 // ---------------------------------------------------------------------------------------------------------
 // Extras
