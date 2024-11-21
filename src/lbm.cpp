@@ -120,7 +120,7 @@ void LBM::check_erros() { // Check for errors and warnings
     if (nu < 0.0f) {
         std::cerr << "Error: Kinematic viscosity (nu) is negative." << std::endl;
     } else if (nu > 0.5) {
-        cout << "Warning: Kinematic viscosity (nu) is greater than 0.5, what can cause instabilities" << std::endl;
+        cout << "Warning: Kinematic viscosity (nu) is greater than 0.5, which can cause instabilities" << std::endl;
     } else if (nu >= 1.0f) {
         cout << "Warning: Kinematic viscosity (nu) should not be much greater than to 1.0." << std::endl;
     }
@@ -162,6 +162,7 @@ void LBM::start() {
  * @param timesteps The number of timesteps to run the simulation for.
  */
 void LBM::run(const uint timesteps) {
+    this->timesteps = timesteps;
     this->step = 0u;
     cout << "Running LBM simulation for " << timesteps << " timesteps...\n";
     while (this->step <= timesteps && timesteps > 0) {
@@ -262,8 +263,10 @@ void LBM::collision() {              // Collision step
             this->u[n][1] /= this->rho[n];
 
             for (int i = 0; i < velocities; i++) {
-                vector<double> f_eq = this->compute_feq(n);
-                this->f[n][i] = (1 - dt / this->tau) * f[n][i] + (dt / this->tau) * f_eq[i];
+                if (i != 0u) {
+                    vector<double> f_eq = this->compute_feq(n);
+                    this->f[n][i] = (1 - dt / this->tau) * f[n][i] + (dt / this->tau) * f_eq[i];
+                };
             }
         };
 
@@ -296,39 +299,44 @@ void LBM::collision() {              // Collision step
  */
 void LBM::boundary_conditions() {    // Boundary conditions
     #if defined (SIM_FLUID)
+        #if defined (D2Q9)
+        #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
+        #endif
         // Apply boundary conditions
         #pragma omp parallel for
-        for (uint n = 0; n < this->N; n++) {
-            if (this->flags[n] == TYPE_S) { // Solid boundary
-                for (int i = 0; i < velocities; i++) {
-                    // Compute the index of the opposite direction
-                    int opp = (i < 4) ? (i + 4) : ((i > 4) ? (i - 4) : i);
+        for (uint n = 0u; n < this->N; n++) {
+            if (this->flags[n] == TYPE_S) { // Solid Boundary
+                for (uint i = 0u; i < velocities; i++) {
+                    // Get opposite directions for bounce-back
+                    uint j = getOpositeDirection(i);
                     // Reflect the distribution function
-                    int nx = (n % this->Nx) + c[i][0];
-                    int ny = (n / this->Nx) + c[i][1];
-                    if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
-                        int dest = nx + ny * this->Nx;
-                        this->f[dest][opp] = this->f[n][i];
+                    // get the neighbor index
+                    uint nx = (n % this->Nx) + c[i][0];
+                    uint ny = (n / this->Nx) + c[i][1];
+                    if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny && this->flags[positionToIndex({nx, ny, 0u}, this->Nx, this->Ny, this->Nz)] != (TYPE_S || TYPE_IN || TYPE_OUT)) {
+                        uint dest = nx + ny * this->Nx;
+                        this->f[dest][j] = this->f[n][i];
                     }
                 }
-            } else if (this->flags[n] == TYPE_IN) { // Inlet boundary
+            } else if (this->flags[n] == TYPE_IN) { // Inlet Boundary
                 // Set the distribution function based on the desired inlet density and velocity
                 vector<double> f_eq = this->compute_feq(n);
-                for (int i = 0; i < velocities; i++) {
+                for (uint i = 0u; i < velocities; i++) {
                     this->f[n][i] = f_eq[i];
                 }
-            } else if (this->flags[n] == TYPE_OUT) { // Outlet boundary
+            } else if (this->flags[n] == TYPE_OUT) { // Outlet Boundary
                 // Simple outflow condition
-                int nx = (n % this->Nx) - 1;
-                int ny = (n / this->Nx);
+                uint nx = (n % this->Nx) - 1;
+                uint ny = (n / this->Nx);
                 if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
-                    int dest = nx + ny * this->Nx;
-                    for (int i = 0; i < velocities; i++) {
+                    uint dest = nx + ny * this->Nx;
+                    for (uint i = 0u; i < velocities; i++) {
                         this->f[n][i] = this->f[dest][i];
                     }
                 }
             }
         }
+
     #elif defined(SIM_PLASMA)
     #else
         std::cerr << "Error: Lattice type not defined." << std::endl;
@@ -341,31 +349,21 @@ void LBM::boundary_conditions() {    // Boundary conditions
 
 void LBM::streaming() { // Streaming step
     #if defined(SIM_FLUID)
-
         #if defined(D2Q9)
-            this->f_temp = this->f;
-
+            this->f_temp = this->f; // Copy the distribution functions to a temporary array
             // Streaming step
             #pragma omp parallel for
-            for (int z = 0; z < this->Nz; ++z) {
-                for (int y = 0; y < this->Ny; ++y) {
-                    for (int x = 0; x < this->Nx; ++x) {
-                        int n = x + y * this->Nx + z * this->Nx * this->Ny; // Índice unidimensional da célula atual
-                        for (int i = 0; i < velocities; ++i) {
-                            // Calcula a célula vizinha considerando periodicidade
-                            int nx = (x + c[i][0] + this->Nx) % this->Nx;
-                            int ny = (y + c[i][1] + this->Ny) % this->Ny;
-                            int nz = (z + c[i][2] + this->Nz) % this->Nz;
-                            int dest = nx + ny * this->Nx + nz * this->Nx * this->Ny; // Índice unidimensional da célula vizinha
-
-                            // Verifica a flag TYPE_S antes de atualizar
-                            if (this->flags[n] != TYPE_S || this->flags[dest] != TYPE_S) {
-                                this->f_temp[dest][i] = f[n][i];
-                            }
-                        }
-                    }
+            for (int n = 0; n < this->N; n++) {
+                vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz); // Get the position of current cell
+                vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
+                for (uint nn : neighbors_index) {
+                    vector<uint> np = indexToPosition(nn, this->Nx, this->Ny, this->Nz); // Get the position of the neighbor
+                    uint i = getDirectionIndex(vector<uint>{np[0] - p[0], np[1] - p[1], np[2] - p[2]}, this->Nx, this->Ny, this->Nz); // Get the direction index
+                    i = getOpositeDirection(i);
+                    this->f_temp[nn][i] = this->f[n][i];
                 }
             }
+
             // Copiar os valores atualizados de volta para `f`
             this->f = this->f_temp;
 
@@ -382,6 +380,45 @@ void LBM::streaming() { // Streaming step
 }
 
 // ---------------------------------------------------------------------------------------------------------
+
+/** getNeighbors
+ * @brief Get the direction index based on the provided vector.
+ * 
+ * This function returns the index of the direction vector `v` in the predefined
+ * set of direction vectors `c`. The function works for both 2D and 3D cases,
+ * depending on the defined macros (D2Q9, D3Q15, D3Q19, D3Q27).
+ * 
+ * @param v The direction vector for which the index is to be found.
+ * @param Nx The number of grid points in the x-direction (not used in this function).
+ * @param Ny The number of grid points in the y-direction (not used in this function).
+ * @param Nz The number of grid points in the z-direction (not used in this function).
+ * @return uint The index of the direction vector `v` in the predefined set of direction vectors `c`.
+ */
+uint LBM::getDirectionIndex(vector<uint> v, uint Nx, uint Ny, uint Nz) {
+    #if defined (D2Q9)
+        uint i = 0;
+        for (auto ci: c) {
+            if (v[0] == ci[0] && v[1] == ci[1]) {
+                return i;
+            } else {
+                i += 1;
+            }
+        };
+        return 0; // Default return value if no match is found
+
+    #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
+        uint i = 0;
+        for (auto ci: c) {
+            if (v[0] == ci[0] && v[1] == ci[1] && v[2] == ci[2]) {
+                return i;
+            } else {
+                i += 1;
+            }
+        };
+        return 0; // Default return value if no match is found
+        
+    #endif
+}; // getDirectionIndex
 
 
 // ---------------------------------------------------------------------------------------------------------
@@ -415,7 +452,7 @@ void LBM::export_data() { // Export data to a file
         } else {
             std::cerr << "Error: Unable to open file for writing." << std::endl;
         }
-    } else {
+    } else if (bool_export_every == false && this->step == this->timesteps) {
         
         std::ofstream file("exports/data.dat");
         if (file.is_open()) {

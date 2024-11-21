@@ -85,8 +85,6 @@ typedef unsigned long ulong;
 #elif defined(D3Q15)
     const uint velocities = 15;
     const uint dimensions = 3;
-    // Lattice velocity set
-    const int c[15][3] = {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1}};
     // Lattice weights
     #define def_w0 (1.0f/4.5f)      // center (0)
 	#define def_ws (1.0f/9.0f)      // straight (1-6)
@@ -96,8 +94,6 @@ typedef unsigned long ulong;
 #elif defined(D3Q19)
     const uint velocities = 19;
     const uint dimensions = 3;
-    // Lattice velocity set
-    const int c[19][3] = {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1}};
     // Lattice weights
     #define def_w0 (1.0f/3.0f)      // center (0)
 	#define def_ws (1.0f/18.0f)     // straight (1-6)
@@ -107,8 +103,6 @@ typedef unsigned long ulong;
 #elif defined(D3Q27)
     const uint velocities = 27;
     const uint dimensions = 3;
-    // Lattice velocity set
-    const int c[27][3] = {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1},{1,1,1},{-1,1,1},{-1,-1,1},{1,-1,1},{1,1,-1},{-1,1,-1},{-1,-1,-1},{1,-1,-1}};
     // Lattice weights
     #define def_w0 (1.0f/3.375f)    // center (0)
 	#define def_ws (1.0f/13.5f)     // straight (1-6)

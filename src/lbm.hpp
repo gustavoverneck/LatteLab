@@ -64,6 +64,8 @@ class LBM { // Lattice Boltzmann Method class
 
         void export_data(); // Export data to a file
 
+        uint getDirectionIndex(vector<uint> v, uint Nx, uint Ny, uint Nz);
+
         // Constructors of variables
         vector<vector<double>> f; // Distribution functions
         vector<vector<double>> f_eq; // Distribution functions
@@ -79,4 +81,5 @@ class LBM { // Lattice Boltzmann Method class
         bool bool_export_every = false; // Boolean to check if the export frequency is set
         uint export_interval = 1; 
         double tau = 0.0f; // Relaxation time
+        uint timesteps = 0u; // Number of time steps
 };
