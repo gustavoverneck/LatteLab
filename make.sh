@@ -6,6 +6,8 @@ cd /home/gverneck/codes/LatteLab
 # Clean previous builds
 echo "Cleaning previous builds..."
 mkdir -p bin
+rm -rf exports
+mkdir -p exports
 rm -rf bin/LatteLab
 
 # Compile the code with OpenMP support

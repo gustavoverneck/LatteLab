@@ -31,7 +31,7 @@ class LBM { // Lattice Boltzmann Method class
 
         void init(); // Initialize LBM's objects;
 
-        void compute_feq(const uint n); // Compute the equilibrium distribution function
+        vector<double> compute_feq(const uint n); // Compute the equilibrium distribution function
 
         #if defined(SIM_PLASMA)
             void compute_geq(const uint n); // Compute the equilibrium distribution function for g
@@ -60,6 +60,8 @@ class LBM { // Lattice Boltzmann Method class
 
         void run(const uint timesteps); // Run the LBM simulation
 
+        void set_export_every(const uint export_every); // Set the export frequency
+
         void export_data(); // Export data to a file
 
         // Constructors of variables
@@ -74,4 +76,6 @@ class LBM { // Lattice Boltzmann Method class
         vector<vector<double>> B; // Magnetic field
         vector<uint> flags; // Flags for each cell
         vector<vector<int>> c; // Lattice velocity set
+        bool bool_export_every = false; // Boolean to check if the export frequency is set
+        uint export_interval = 1; // Export interval
 };

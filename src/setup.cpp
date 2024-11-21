@@ -4,11 +4,11 @@ void main_setup() { // main_setup for the lbm simulation
     const uint Nx = 100u;
     const uint Ny = 100u;
     const uint Nz = 1u;
-    const float nu = 0.1f;
+    const float nu = 1.0f;
     const ulong N = Nx*Ny*Nz;
     const uint timesteps = 1000u;
 
-    const uint num_threads = 8u;
+    const uint num_threads = 10u;
     omp_set_num_threads(num_threads);
     
 
@@ -36,8 +36,8 @@ void main_setup() { // main_setup for the lbm simulation
         }
     };
 
-    
-    lbm.run(timesteps); // Run the LBM simulation
-    lbm.export_data(); // Export data to a file
+    //lbm.set_export_every(200); // Export data every 100 steps
 
-};
+    lbm.run(timesteps); // Run the LBM simulation
+
+}; // main_setup

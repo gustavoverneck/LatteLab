@@ -52,7 +52,7 @@ void LBM::init() {
 
         #if defined(SIM_FLUID)
             this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+            //this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions # UPDATE: f_eq is no longer a vector of size N. It will be computed every timestep for memmory optimization
             this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
             this->rho = vector<double> (N, 1.0f); // Density
             this->flags = vector<uint> (N, 0u); // Flags for each cell
@@ -60,7 +60,7 @@ void LBM::init() {
 
         #elif defined(SIM_PLASMA)
             this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+            //this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions # UPDATE: f_eq is no longer a vector of size N. It will be computed every timestep for memmory optimization
             this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
             this->g = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
             this->g_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
@@ -68,7 +68,6 @@ void LBM::init() {
             this->rho = vector<double> (N, 0.0f); // Density
             this->flags = vector<uint> (N, 0u); // Flags for each cell
             this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
-            //this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
             this->E = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Electric field
             this->B = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Magnetic field
 
@@ -77,6 +76,13 @@ void LBM::init() {
             return;
             
         #endif
+
+        for (uint n = 0; n < this->N; n++) {
+            vector<double> f_eq = this->compute_feq(n);
+            for (uint i = 0; i < velocities; i++) {
+                this->f[n][i] = f_eq[i];
+            }
+        }
 
         // Set the initialized flag to true
         this->initialized = true;
@@ -169,11 +175,16 @@ void LBM::run(const uint timesteps) {
  */
 void LBM::evolve() { // Perform one LBM time step -> collision -> boundary conditions -> streaming
     this->collision();
-    //this->boundary_conditions();
+    this->boundary_conditions();
     this->streaming();
+    
+    if (bool_export_every) this->export_data(); // Export data every export_every steps
+
 } // evolve
 
+
 // ---------------------------------------------------------------------------------------------------------
+
 
 /** compute_feq
  * @brief Computes the equilibrium distribution function (f_eq) for a given node.
@@ -184,11 +195,13 @@ void LBM::evolve() { // Perform one LBM time step -> collision -> boundary condi
  *
  * @param n The index of the node for which the equilibrium distribution function is computed.
   */
-void LBM::compute_feq(const uint n) {
+vector<double> LBM::compute_feq(const uint n) {
+    vector<double> f_eq(velocities, 0.0f);
     for (int i = 0; i < velocities; i++) {
         double uc = (this->u[n][0] * this->c[i][0] + this->u[n][1] * this->c[i][1]);
-        this->f_eq[n][i] = w[i] * this->rho[n] *(1 + 3.0f * uc + 4.5f * uc * uc - 1.5f * (this->u[n][0] * this->u[n][0] + this->u[n][1] * this->u[n][1]));
+        f_eq[i] = w[i] * this->rho[n] *(1 + 3.0f * uc + 4.5f * uc * uc - 1.5f * (this->u[n][0] * this->u[n][0] + this->u[n][1] * this->u[n][1]));
     };
+    return f_eq;
 } // compute_feq
 
 // ---------------------------------------------------------------------------------------------------------
@@ -199,16 +212,8 @@ void LBM::compute_feq(const uint n) {
     } // compute_geq
 #endif
 
-// ---------------------------------------------------------------------------------------------------------
-
-
-
-
 
 // ---------------------------------------------------------------------------------------------------------
-
-
-
 
 
 /** collision
@@ -227,12 +232,9 @@ void LBM::compute_feq(const uint n) {
  */
 void LBM::collision() {              // Collision step
     #if defined(SIM_FLUID)
-        // Parallelize the collision task using OpenMP
+        // Parallelize the collision process using OpenMP
         #pragma omp parallel for
         for (uint n = 0; n < this->N; n++) {
-            for (int i = 0; i < velocities; i++) {
-                this->f[n][i] = this->rho[n] * this->f[n][i];
-            }
             if (this->flags[n] == TYPE_S || this->flags[n] == TYPE_IN || this->flags[n] == TYPE_OUT) continue; // Skip solid and in/out cells
             // Compute density and velocity for each cell
             this->rho[n] = 0.0f;
@@ -243,14 +245,12 @@ void LBM::collision() {              // Collision step
                 this->u[n][0] += this->f[n][i] * this->c[i][0];
                 this->u[n][1] += this->f[n][i] * this->c[i][1];
             }
-            if (this->rho[n] > 1e-10) {
-                this->u[n][0] /= this->rho[n];
-                this->u[n][1] /= this->rho[n];
-            }
+            this->u[n][0] /= this->rho[n];
+            this->u[n][1] /= this->rho[n];
 
-            this->compute_feq(n);
             for (int i = 0; i < velocities; i++) {
-                this->f[n][i] = this->f_eq[n][i] + (1.0f - 1.0f / this->nu) * (this->f[n][i] - this->f_eq[n][i]);
+                vector<double> f_eq = this->compute_feq(n);
+                this->f[n][i] = f_eq[i] + (1.0f - 1.0f / this->nu) * (this->f[n][i] - f_eq[i]);
             }
         };
 
@@ -262,7 +262,9 @@ void LBM::collision() {              // Collision step
     #endif
 }  // collision
 
+
 // ---------------------------------------------------------------------------------------------------------
+
 
 /** boundary_conditions
  * @brief Applies boundary conditions to the Lattice Boltzmann Method (LBM) simulation.
@@ -280,7 +282,45 @@ void LBM::collision() {              // Collision step
  * Additional boundary conditions can be added as needed.
  */
 void LBM::boundary_conditions() {    // Boundary conditions
-    
+    #if defined (SIM_FLUID)
+        // Apply boundary conditions
+        #pragma omp parallel for
+        for (uint n = 0; n < this->N; n++) {
+            if (this->flags[n] == TYPE_S) { // Solid boundary
+                for (int i = 0; i < velocities; i++) {
+                    // Compute the index of the opposite direction
+                    int opp = (i < 4) ? (i + 4) : ((i > 4) ? (i - 4) : i);
+                    // Reflect the distribution function
+                    int nx = (n % this->Nx) + c[i][0];
+                    int ny = (n / this->Nx) + c[i][1];
+                    if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
+                        int dest = nx + ny * this->Nx;
+                        this->f[dest][opp] = this->f[n][i];
+                    }
+                }
+            } else if (this->flags[n] == TYPE_IN) { // Inlet boundary
+                // Set the distribution function based on the desired inlet density and velocity
+                vector<double> f_eq = this->compute_feq(n);
+                for (int i = 0; i < velocities; i++) {
+                    this->f[n][i] = f_eq[i];
+                }
+            } else if (this->flags[n] == TYPE_OUT) { // Outlet boundary
+                // Simple outflow condition
+                int nx = (n % this->Nx) - 1;
+                int ny = (n / this->Nx);
+                if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
+                    int dest = nx + ny * this->Nx;
+                    for (int i = 0; i < velocities; i++) {
+                        this->f[n][i] = this->f[dest][i];
+                    }
+                }
+            }
+        }
+    #elif defined(SIM_PLASMA)
+    #else
+        std::cerr << "Error: Lattice type not defined." << std::endl;
+        return;
+    #endif
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -290,34 +330,32 @@ void LBM::streaming() { // Streaming step
     #if defined(SIM_FLUID)
 
         #if defined(D2Q9)
-            //this->f_temp = this->f;
+            this->f_temp = this->f;
 
             // Streaming step
             #pragma omp parallel for
-            for (int j = Ny - 1; j >= 1; --j) {
-                for (int i = 0; i < Nx - 1; ++i) {
-                    this->f[i + Nx * j][2] = this->f[i + Nx * (j - 1)][2];
-                    this->f[i + Nx * j][6] = this->f[(i + 1) + Nx * (j - 1)][6];
+            for (int z = 0; z < this->Nz; ++z) {
+                for (int y = 0; y < this->Ny; ++y) {
+                    for (int x = 0; x < this->Nx; ++x) {
+                        int n = x + y * this->Nx + z * this->Nx * this->Ny; // Índice unidimensional da célula atual
+                        for (int i = 0; i < velocities; ++i) {
+                            // Calcula a célula vizinha considerando periodicidade
+                            int nx = (x + c[i][0] + this->Nx) % this->Nx;
+                            int ny = (y + c[i][1] + this->Ny) % this->Ny;
+                            int nz = (z + c[i][2] + this->Nz) % this->Nz;
+                            int dest = nx + ny * this->Nx + nz * this->Nx * this->Ny; // Índice unidimensional da célula vizinha
+
+                            // Verifica a flag TYPE_S antes de atualizar
+                            if (this->flags[n] != TYPE_S || this->flags[dest] != TYPE_S) {
+                                this->f_temp[dest][i] = f[n][i];
+                            }
+                        }
+                    }
                 }
             }
-            for (int j = Ny - 1; j >= 1; --j) {
-                for (int i = Nx - 1; i >= 1; --i) {
-                    this->f[i + Nx * j][1] = this->f[(i - 1) + Nx * j][1];
-                    this->f[i + Nx * j][5] = this->f[(i - 1) + Nx * (j - 1)][5];
-                }
-            }
-            for (int j = 0; j < Ny - 1; ++j) {
-                for (int i = Nx - 1; i >= 1; --i) {
-                    this->f[i + Nx * j][4] = this->f[i + Nx * (j + 1)][4];
-                    this->f[i + Nx * j][8] = this->f[(i - 1) + Nx * (j + 1)][8];
-                }
-            }
-            for (int j = 0; j < Ny - 1; ++j) {
-                for (int i = 0; i < Nx - 1; ++i) {
-                    this->f[i + Nx * j][3] = this->f[(i + 1) + Nx * j][3];
-                    this->f[i + Nx * j][7] = this->f[(i + 1) + Nx * (j + 1)][7];
-                }
-            }
+            // Copiar os valores atualizados de volta para `f`
+            this->f = this->f_temp;
+
         #elif defined(D3Q15)
         #elif defined(D3Q19)
         #elif defined(D3Q27)
@@ -348,19 +386,43 @@ void LBM::streaming() { // Streaming step
  */
 void LBM::export_data() { // Export data to a file
     // Export data to a file
-    std::ofstream file("data.txt");
-    if (file.is_open()) {
-        file << "i" << "\t" << "j" << "\t" << "k" << "\t" << "rho" << "\t" << "|u|" << std::endl;
-        for (int i = 0; i < Nx; ++i) {
-            for (int j = 0; j < Ny; ++j) {
-                for (int k = 0; k < Nz; ++k) {
-                    int index = i + Nx * (j + Ny * k);
-                    double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                    file << i << "\t" << j << "\t" << k << "\t" << this->rho[index] << "\t" << uu << "\n";
+    if (bool_export_every && this->step % this->export_interval == 0) {
+        std::ofstream file("exports/data_" + std::to_string(step) + ".dat");
+        if (file.is_open()) {
+            for (uint i = 0; i < Nx; ++i) {
+                for (uint j = 0; j < Ny; ++j) {
+                    for (uint k = 0; k < Nz; ++k) {
+                        int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
+                            double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
+                            file << i << "\t" << j << "\t" << k << "\t" << this->flags[index] << "\t" << this->rho[index] << "\t" << uu << "\n";
+                    };
                 };
             };
-        };
-        file.close();
+            file.close();
+        } else {
+            std::cerr << "Error: Unable to open file for writing." << std::endl;
+        }
     } else {
-        std::cerr << "Error: Unable to open file for writing." << std::endl;    }
+        
+        std::ofstream file("exports/data.dat");
+        if (file.is_open()) {
+            for (uint i = 0; i < Nx; ++i) {
+                for (uint j = 0; j < Ny; ++j) {
+                    for (uint k = 0; k < Nz; ++k) {
+                        int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
+                        double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
+                        file << i << "\t" << j << "\t" << k << "\t" << this->flags[index] << "\t" << this->rho[index] << "\t" << uu << "\n";
+                    };
+                };
+            };
+            file.close();
+        } else {
+            std::cerr << "Error: Unable to open file for writing." << std::endl;    }
+    }
+}
+
+
+void LBM::set_export_every(const uint interval) {
+    this->export_interval = interval;
+    this->bool_export_every = true;
 }
