@@ -77,5 +77,6 @@ class LBM { // Lattice Boltzmann Method class
         vector<uint> flags; // Flags for each cell
         vector<vector<int>> c; // Lattice velocity set
         bool bool_export_every = false; // Boolean to check if the export frequency is set
-        uint export_interval = 1; // Export interval
+        uint export_interval = 1; 
+        double tau = 0.0f; // Relaxation time
 };

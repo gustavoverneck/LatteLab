@@ -39,6 +39,7 @@ void LBM::init() {
 // Initialize the lattice
         cout << "Initializing variables...\n";
         this->N = Nx*Ny*Nz; // Number of lattice cells
+        this->tau = nu * 3.0f / dt + 0.5f; // Relaxation time
 
         #ifdef D2Q9
             this->c = vector<vector<int>> {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
@@ -110,9 +111,21 @@ void LBM::check_erros() { // Check for errors and warnings
         std::cerr << "LBM object not initialized. Call LBM::initialize() before calling this function." << std::endl;
         return;
     };
+
     #ifdef D2Q9
         if(Nz!=1u) std::cerr << "D2Q9 can not have Nz=1u! Change it in the constructor." << std::endl;
     #endif // D2Q9
+
+    // Nu warning
+    if (nu < 0.0f) {
+        std::cerr << "Error: Kinematic viscosity (nu) is negative." << std::endl;
+    } else if (nu > 0.5) {
+        cout << "Warning: Kinematic viscosity (nu) is greater than 0.5, what can cause instabilities" << std::endl;
+    } else if (nu >= 1.0f) {
+        cout << "Warning: Kinematic viscosity (nu) should not be much greater than to 1.0." << std::endl;
+    }
+    
+
 }  // check_erros()
 
 
@@ -250,7 +263,7 @@ void LBM::collision() {              // Collision step
 
             for (int i = 0; i < velocities; i++) {
                 vector<double> f_eq = this->compute_feq(n);
-                this->f[n][i] = f_eq[i] + (1.0f - 1.0f / this->nu) * (this->f[n][i] - f_eq[i]);
+                this->f[n][i] = (1 - dt / this->tau) * f[n][i] + (dt / this->tau) * f_eq[i];
             }
         };
 
@@ -394,7 +407,7 @@ void LBM::export_data() { // Export data to a file
                     for (uint k = 0; k < Nz; ++k) {
                         int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
                             double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                            file << i << "\t" << j << "\t" << k << "\t" << this->flags[index] << "\t" << this->rho[index] << "\t" << uu << "\n";
+                            file << i << "\t" << j << "\t" << k << "\t" << this->rho[index] << "\t" << uu << "\n";
                     };
                 };
             };
@@ -411,7 +424,7 @@ void LBM::export_data() { // Export data to a file
                     for (uint k = 0; k < Nz; ++k) {
                         int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
                         double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                        file << i << "\t" << j << "\t" << k << "\t" << this->flags[index] << "\t" << this->rho[index] << "\t" << uu << "\n";
+                        file << i << "\t" << j << "\t" << k << "\t" << this->rho[index] << "\t" << uu << "\n";
                     };
                 };
             };
