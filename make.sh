@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Navigate to the project directory
-cd /home/gverneck/codes/LatteLab
+cd "$(dirname "$0")"
 
 # Clean previous builds
 echo "Cleaning previous builds..."
@@ -15,7 +15,7 @@ echo "Compiling the code..."
 start_time=$(date +%s%3N)  # Capture the start time in milliseconds
 
 # Compile using g++ with OpenMP support (-fopenmp)
-g++ src/*.cpp -o bin/LatteLab -std=c++17 -fopenmp -lGL -lGLU -lglut
+g++ src/*.cpp -o bin/LatteLab -std=c++17 -fopenmp
 
 end_time=$(date +%s%3N)    # Capture the end time in milliseconds
 duration=$(( end_time - start_time ))  # Calculate the duration in milliseconds
