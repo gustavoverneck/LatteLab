@@ -436,15 +436,16 @@ uint LBM::getDirectionIndex(vector<uint> v, uint Nx, uint Ny, uint Nz) {
  */
 void LBM::export_data() { // Export data to a file
     // Export data to a file
-    if (bool_export_every && this->step % this->export_interval == 0) {
-        std::ofstream file("exports/data_" + std::to_string(step) + ".dat");
+    if (bool_export_every && (this->step % this->export_interval == 0 || this->step == 0)) {
+        std::ofstream file("exports/data_" + std::to_string(step) + ".csv");
         if (file.is_open()) {
-            for (uint i = 0; i < Nx; ++i) {
-                for (uint j = 0; j < Ny; ++j) {
+            file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";
+            for (uint j = 0; j < Ny; ++j) {
+                for (uint i = 0; i < Nx; ++i) {
                     for (uint k = 0; k < Nz; ++k) {
                         int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
                             double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                            file << i << "\t" << j << "\t" << k << "\t" << this->rho[index] << "\t" << uu << "\n";
+                            file << i << ",\t" << j << ",\t" << k << ",\t" << this->rho[index] << ",\t" << this->u[index][0] << ",\t" << this->u[index][1] << "\n";
                     };
                 };
             };
@@ -454,14 +455,14 @@ void LBM::export_data() { // Export data to a file
         }
     } else if (bool_export_every == false && this->step == this->timesteps) {
         
-        std::ofstream file("exports/data.dat");
+        std::ofstream file("exports/data.csv");
         if (file.is_open()) {
             for (uint i = 0; i < Nx; ++i) {
                 for (uint j = 0; j < Ny; ++j) {
                     for (uint k = 0; k < Nz; ++k) {
                         int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
                         double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                        file << i << "\t" << j << "\t" << k << "\t" << this->rho[index] << "\t" << uu << "\n";
+                        file << i << ",\t" << j << ",\t" << k << ",\t" << this->rho[index] << ",\t" << this->u[index][0] << ",\t" << this->u[index][1] << "\n";
                     };
                 };
             };

@@ -43,26 +43,3 @@ else
     echo "Compilation failed."
     exit 1
 fi
-
-
-
-# Compile and run render.cpp
-#echo "Compiling render.cpp..."
-#g++ render.cpp -o bin/render -std=c++17 -fopenmp -lGL -lGLU -lglut
-
-# Check if compilation was successful
-#if [ $? -eq 0 ]; then
-#    echo "Compilation of render.cpp successful. Executable is located at 'bin/render'."
-#    echo "Executing render..."
-#    echo " "
-
-    # Time the execution of the program
-#    start_time=$(date +%s%3N)  # Capture the start time in milliseconds
-
-    # Run the executable
-#    ./bin/render
-
-#else
-#    echo "Compilation of render.cpp failed."
-#    exit 1
-#fi
