@@ -4,6 +4,12 @@
 To select any of the following simulation types or setting, uncomment the corresponding line
 */
 
+/*
+    Define graphical or data output
+*/
+    #define GRAPHICAL_OUTPUT // Not implemented
+    //#define DATA_OUTPUT // Not implemented
+
 
 /*
     Simulation type: SIM_FLUID or SIM_PLASMA
@@ -126,6 +132,6 @@ typedef unsigned long ulong;
 #endif
 
 // Ensure only one simulation type is defined
-#if (defined(SIM_FLUID) + defined(SIM_PLASMA)) > 1
-    #error "Multiple simulation types defined. Please define only one simulation type."
+#if ((defined(SIM_FLUID) + defined(SIM_PLASMA)) > 1 || (defined(SIM_FLUID) + defined(SIM_PLASMA)) == 0)
+    #error "Multiple or no simulation type(s) defined. Please define only one simulation type."
 #endif

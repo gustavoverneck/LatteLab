@@ -82,4 +82,5 @@ class LBM { // Lattice Boltzmann Method class
         uint export_interval = 1; 
         double tau = 0.0f; // Relaxation time
         uint timesteps = 0u; // Number of time steps
+        uint num_devices;
 };

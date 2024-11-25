@@ -37,56 +37,67 @@ LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu)
  */
 void LBM::init() {
 // Initialize the lattice
-        cout << "Initializing variables...\n";
-        this->N = Nx*Ny*Nz; // Number of lattice cells
-        this->tau = nu * 3.0f / dt + 0.5f; // Relaxation time
+    
+    // Set the number of threads to 8 if the number of threads is greater than or equal to 8
+    int num_threads = omp_get_max_threads();
+    if (num_threads >= 8) {
+        omp_set_num_threads(8);
+    } else {
+        omp_set_num_threads(omp_get_max_threads());
+    };
+    cout << "Threads: " << omp_get_max_threads() << endl;
 
-        #ifdef D2Q9
-            this->c = vector<vector<int>> {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
-        #elif defined(D3Q15)
-            this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1}};
-        #elif defined(D3Q19)
-            this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1}};
-        #elif defined(D3Q27)
-            this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1},{1,1,1},{-1,1,1},{-1,-1,1},{1,-1,1},{1,1,-1},{-1,1,-1},{-1,-1,-1},{1,-1,-1}};
-        #endif
+    
+    cout << "Initializing variables...\n";
+    this->N = Nx*Ny*Nz; // Number of lattice cells
+    this->tau = nu * 3.0f / dt + 0.5f; // Relaxation time
 
-        #if defined(SIM_FLUID)
-            this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            //this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions # UPDATE: f_eq is no longer a vector of size N. It will be computed every timestep for memmory optimization
-            this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->rho = vector<double> (N, 1.0f); // Density
-            this->flags = vector<uint> (N, 0u); // Flags for each cell
-            this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
+    #ifdef D2Q9
+        this->c = vector<vector<int>> {{0,0},{1,0},{0,1},{-1,0},{0,-1},{1,1},{-1,1},{-1,-1},{1,-1}};
+    #elif defined(D3Q15)
+        this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1}};
+    #elif defined(D3Q19)
+        this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1}};
+    #elif defined(D3Q27)
+        this->c = vector<vector<int>> {{0,0,0},{1,0,0},{0,1,0},{-1,0,0},{0,-1,0},{0,0,1},{0,0,-1},{1,1,0},{-1,1,0},{-1,-1,0},{1,-1,0},{1,0,1},{-1,0,1},{-1,0,-1},{1,0,-1},{0,1,1},{0,-1,1},{0,-1,-1},{0,1,-1},{1,1,1},{-1,1,1},{-1,-1,1},{1,-1,1},{1,1,-1},{-1,1,-1},{-1,-1,-1},{1,-1,-1}};
+    #endif
 
-        #elif defined(SIM_PLASMA)
-            this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            //this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions # UPDATE: f_eq is no longer a vector of size N. It will be computed every timestep for memmory optimization
-            this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->g = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->g_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->g_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
-            this->rho = vector<double> (N, 0.0f); // Density
-            this->flags = vector<uint> (N, 0u); // Flags for each cell
-            this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
-            this->E = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Electric field
-            this->B = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Magnetic field
+    #if defined(SIM_FLUID)
+        this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        //this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions # UPDATE: f_eq is no longer a vector of size N. It will be computed every timestep for memmory optimization
+        this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        this->rho = vector<double> (N, 1.0f); // Density
+        this->flags = vector<uint> (N, 0u); // Flags for each cell
+        this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
 
-        #else
-            std::cerr << "Error: Lattice type not defined. Please define a lattice type in the definitions.hpp file." << std::endl;
-            return;
-            
-        #endif
+    #elif defined(SIM_PLASMA)
+        this->f = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        //this->f_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions # UPDATE: f_eq is no longer a vector of size N. It will be computed every timestep for memmory optimization
+        this->f_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        this->g = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        this->g_eq = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        this->g_temp = vector<vector<double>> (N, vector<double>(velocities, 0.0f)); // Distribution functions
+        this->rho = vector<double> (N, 0.0f); // Density
+        this->flags = vector<uint> (N, 0u); // Flags for each cell
+        this->u = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Velocity
+        this->E = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Electric field
+        this->B = vector<vector<double>> (N, vector<double>(dimensions, 0.0f)); // Magnetic field
 
-        for (uint n = 0; n < this->N; n++) {
-            vector<double> f_eq = this->compute_feq(n);
-            for (uint i = 0; i < velocities; i++) {
-                this->f[n][i] = f_eq[i];
-            }
+    #else
+        std::cerr << "Error: Lattice type not defined. Please define a lattice type in the definitions.hpp file." << std::endl;
+        return;
+        
+    #endif
+
+    for (uint n = 0; n < this->N; n++) {
+        vector<double> f_eq = this->compute_feq(n);
+        for (uint i = 0; i < velocities; i++) {
+            this->f[n][i] = f_eq[i];
         }
+    }
 
-        // Set the initialized flag to true
-        this->initialized = true;
+    // Set the initialized flag to true
+    this->initialized = true;
 } // init
 
 
@@ -365,7 +376,10 @@ void LBM::streaming() { // Streaming step
             }
 
             // Copiar os valores atualizados de volta para `f`
-            this->f = this->f_temp;
+            #pragma omp parallel for
+            for (int n = 0; n < this->N; n++) {
+                this->f[n] = this->f_temp[n];
+            }
 
         #elif defined(D3Q15)
         #elif defined(D3Q19)
@@ -436,42 +450,32 @@ uint LBM::getDirectionIndex(vector<uint> v, uint Nx, uint Ny, uint Nz) {
  */
 void LBM::export_data() { // Export data to a file
     // Export data to a file
-    if (bool_export_every && (this->step % this->export_interval == 0 || this->step == 0)) {
+    if (bool_export_every && (this->step % this->export_interval == 0 || this->step == 1)) {
         std::ofstream file("exports/data_" + std::to_string(step) + ".csv");
         if (file.is_open()) {
             file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";
-            for (uint j = 0; j < Ny; ++j) {
-                for (uint i = 0; i < Nx; ++i) {
-                    for (uint k = 0; k < Nz; ++k) {
-                        int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
-                            double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                            file << i << ",\t" << j << ",\t" << k << ",\t" << this->rho[index] << ",\t" << this->u[index][0] << ",\t" << this->u[index][1] << "\n";
-                    };
-                };
+            for (uint n = 0; n < this->N; n++) {
+                vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz);
+                file << p[0] << ",\t" << p[1] << ",\t" << p[2] << ",\t" << this->rho[n] << ",\t" << this->u[n][0] << ",\t" << this->u[n][1] << "\n";
             };
             file.close();
         } else {
             std::cerr << "Error: Unable to open file for writing." << std::endl;
         }
-    } else if (bool_export_every == false && this->step == this->timesteps) {
+    } else{
         
         std::ofstream file("exports/data.csv");
         if (file.is_open()) {
-            for (uint i = 0; i < Nx; ++i) {
-                for (uint j = 0; j < Ny; ++j) {
-                    for (uint k = 0; k < Nz; ++k) {
-                        int index = positionToIndex(vector<uint>{i, j, k}, this->Nx, this->Ny, this->Nz);
-                        double uu = sqrt(this->u[index][0] * this->u[index][0] + this->u[index][1] * this->u[index][1]);
-                        file << i << ",\t" << j << ",\t" << k << ",\t" << this->rho[index] << ",\t" << this->u[index][0] << ",\t" << this->u[index][1] << "\n";
-                    };
-                };
+            file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";
+            for (uint n = 0; n < this->N; n++) {
+                vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz);
+                file << p[0] << ",\t" << p[1] << ",\t" << p[2] << ",\t" << this->rho[n] << ",\t" << this->u[n][0] << ",\t" << this->u[n][1] << "\n";
             };
             file.close();
         } else {
             std::cerr << "Error: Unable to open file for writing." << std::endl;    }
     }
 }
-
 
 void LBM::set_export_every(const uint interval) {
     this->export_interval = interval;

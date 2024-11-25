@@ -1,14 +1,17 @@
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+from multiprocessing import Pool
 
 os.makedirs("exports", exist_ok=True)  # Creates the folder if it doesn't exist
 
 class Data:
-    def __init__(self, filename, title=""):
+    def __init__(self, filename, title="", size=100):
         self.filename = filename
         self.data = self.read_data()
         self.title = title
+        self.size = size
+        self.cmap = "inferno"
     
     def read_data(self):
         try:
@@ -36,7 +39,7 @@ class Data:
             z.append(float(line[2]))
             rho.append(float(line[3]))
             ux.append(float(line[4]))
-            uy.append(float(line[5].split("\n")[0]))
+            uy.append(float(line[5]))
             uu.append(np.sqrt(float(line[4])**2 + float(line[5])**2))
         
         self.x = np.array(x)
@@ -50,35 +53,54 @@ class Data:
     
     def plot_export(self, field='rho'):
         filename = self.title
+        x, y = np.meshgrid(np.linspace(min(self.x), max(self.x), self.size), np.linspace(min(self.y), max(self.y), self.size))
+        k = np.reshape(self.uu, (self.size, self.size))
+        u = np.reshape(self.ux, (self.size, self.size))
+        v = np.reshape(self.uy, (self.size, self.size))
         if field == 'rho':
+            print("Plotting density for ", filename)
             plt.clf()
-            plt.scatter(self.x, self.y, c=self.rho, cmap='viridis')
+            plt.scatter(self.x, self.y, c=self.rho, cmap=self.cmap)
             plt.colorbar()
             plt.title('Density')
-            plt.savefig(f"exports/{filename.split(".")[0]}_rho.png", dpi=600)
+            plt.savefig(f"exports/rho_{filename}.png", dpi=600)
         elif field == 'u':
+            print("Plotting velocity for ", filename)
             plt.clf()
-            plt.scatter(self.x, self.y, c=self.uu, cmap='viridis')
+            plt.scatter(self.x, self.y, c=self.uu, cmap=self.cmap)
             plt.colorbar()
             plt.title('Velocity')
-            plt.savefig(f"exports/{filename.split(".")[0]}_u.png", dpi=600)
+            plt.savefig(f"exports/u_{filename}.png", dpi=600)
         elif field == 'streamlines':
-            k = np.reshape(self.uu, (100, 100))
-            u = np.reshape(self.ux, (100, 100))
-            v = np.reshape(self.uy, (100, 100))
-            x, y = np.meshgrid(np.linspace(min(self.x), max(self.x), 100), np.linspace(min(self.y), max(self.y), 100))
-            plt.streamplot(x, y, u, v, density=1.25, color='white', linewidth=0.5, cmap='viridis')
+            print("Plotting streamlines for ", filename)
+            plt.clf()
+            plt.scatter(self.x, self.y, c=self.uu, cmap=self.cmap)
+            plt.streamplot(x, y, u, v, density=1.25, color='white', linewidth=0.5, cmap=self.cmap)
             plt.title('Streamlines')
-            plt.savefig(f"exports/{filename.split(".")[0]}_streamlines.png", dpi=600)
+            plt.savefig(f"exports/streamlines_{filename}.png", dpi=600)
+        elif field == 'contour':
+            print("Plotting contour for ", filename)
+            plt.clf()
+            levels = 10
+            cmap = plt.get_cmap(self.cmap, levels+1)
+            plt.contourf(x, y, k, levels, cmap=self.cmap)
+            plt.streamplot(x, y, u, v, density=1.25, color='white', linewidth=0.5, cmap=self.cmap)
+            plt.title('Streamlines')
+            plt.savefig(f"exports/contour_{filename}.png", dpi=600)
         else:
             print('Invalid field')
             return None
         
 
-
-if __name__ == '__main__':
-    data = Data('exports/data_1000.csv', title="1000")
+def process_single_file(value):
+    data = Data(f'exports/data_{value}.csv', title=value, size=1024)
     data.interpret_data()
     data.plot_export('rho')
     data.plot_export('u')
     data.plot_export('streamlines')
+    data.plot_export('contour')
+
+if __name__ == '__main__':
+    file_list = np.arange(5, 200+1, 5)
+    with Pool() as pool:
+        pool.map(process_single_file, file_list)
