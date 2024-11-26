@@ -4,6 +4,7 @@
 // Libraries
 
 #include <vector>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <fstream>

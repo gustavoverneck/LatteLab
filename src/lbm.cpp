@@ -179,7 +179,7 @@ void LBM::run(const uint timesteps) {
     while (this->step <= timesteps && timesteps > 0) {
         this->step++;
         this->evolve();
-    }
+    };
 } // run
 
 
@@ -309,9 +309,12 @@ void LBM::collision() {              // Collision step
  * Additional boundary conditions can be added as needed.
  */
 void LBM::boundary_conditions() {    // Boundary conditions
+    // Apply boundary conditions
+    if (this->bc){
+        this->apply(bc); // Apply boundary conditions over time steps
+    };
     #if defined (SIM_FLUID)
         #if defined (D2Q9)
-            // Apply boundary conditions
             #pragma omp parallel for
             for (uint n = 0u; n < this->N; n++) {
                 if (this->flags[n] == TYPE_S) { // Solid Boundary
@@ -420,7 +423,7 @@ uint LBM::getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz) {
         vector<uint> p = indexToPosition(n, Nx, Ny, Nz); // Get the position of current cell
         vector<uint> np = indexToPosition(nn, Nx, Ny, Nz); // Get the position of the neighbor cell
 
-        if (np[0] == p[0] && np[1] == p[1]) return 0; // Center
+        //if (np[0] == p[0] && np[1] == p[1]) return 0; // Center is not needed
 
         if (np[0] == (p[0] + 1) % Nx && np[1] == p[1]) return 1; // East
         if (np[0] == p[0] && np[1] == (p[1] + 1) % Ny) return 2; // North
@@ -437,6 +440,23 @@ uint LBM::getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz) {
     #endif
     return -1;
 } // getDirectionIndex
+
+// ---------------------------------------------------------------------------------------------------------
+// Function to apply boundary conditions over time steps
+void LBM::apply(std::function<void(LBM&, uint, uint, uint, uint)> bc) {
+    if (!this->bc) {
+        this->bc = bc;
+    } else {
+        #pragma omp parallel for
+        for (uint n = 0; n < this->N; n++) {
+            vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz);
+            uint x = p[0]; uint y = p[1]; uint z = p[2];
+            bc(*this, n, x, y, z);
+        }
+    }
+} // apply
+
+
 
 
 // ---------------------------------------------------------------------------------------------------------
