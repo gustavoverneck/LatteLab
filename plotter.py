@@ -75,16 +75,16 @@ class Data:
             print("Plotting streamlines for ", filename)
             plt.clf()
             plt.scatter(self.x, self.y, c=self.uu, cmap=self.cmap)
-            plt.streamplot(x, y, u, v, density=1.25, color='white', linewidth=0.5, cmap=self.cmap)
+            plt.streamplot(x, y, u, v, density=3, color='white', linewidth=0.1, cmap=self.cmap)
             plt.title('Streamlines')
             plt.savefig(f"exports/streamlines_{filename}.png", dpi=600)
         elif field == 'contour':
             print("Plotting contour for ", filename)
             plt.clf()
-            levels = 10
+            levels = 20
             cmap = plt.get_cmap(self.cmap, levels+1)
             plt.contourf(x, y, k, levels, cmap=self.cmap)
-            plt.streamplot(x, y, u, v, density=1.25, color='white', linewidth=0.5, cmap=self.cmap)
+            plt.streamplot(x, y, u, v, density=3, color='white', linewidth=0.1, cmap=self.cmap)
             plt.title('Streamlines')
             plt.savefig(f"exports/contour_{filename}.png", dpi=600)
         else:
@@ -93,7 +93,8 @@ class Data:
         
 
 def process_single_file(value):
-    data = Data(f'exports/data_{value}.csv', title=value, size=1024)
+    global size
+    data = Data(f'exports/data_{value}.csv', title=value, size=size)
     data.interpret_data()
     data.plot_export('rho')
     data.plot_export('u')
@@ -101,6 +102,12 @@ def process_single_file(value):
     data.plot_export('contour')
 
 if __name__ == '__main__':
-    file_list = np.arange(5, 200+1, 5)
+    # Parameters
+    size = 128
+    timesteps = 1000
+    interval = 100
+    t0 = 100
+    
+    file_list = np.arange(t0, timesteps+1, interval)
     with Pool() as pool:
         pool.map(process_single_file, file_list)
