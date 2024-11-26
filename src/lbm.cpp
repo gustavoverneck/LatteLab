@@ -343,7 +343,7 @@ void LBM::boundary_conditions() {    // Boundary conditions
                             this->f[n][i] = this->f[dest][i];
                         }
                     }
-                }
+                } else if (this->flags[n] == TYPE_F) continue;
             }
         #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
 
@@ -367,16 +367,19 @@ void LBM::streaming() { // Streaming step
             // Streaming step
             #pragma omp parallel for
             for (int n = 0; n < this->N; n++) {
-                if (this->flags[n] == TYPE_S) continue; // Skip solid cells
-                vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
-                for (uint nn : neighbors_index) {
-                    if (this->flags[nn] != TYPE_S) {
-                        uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
-                        i = getOpositeDirection(i);   
-                        this->f_temp[nn][i] = this->f[n][i];
-                    }
-                }
-            }
+                if (this->flags[n] == TYPE_S) {
+                    continue;   // Skip solid cells
+                } else {
+                    vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
+                    for (uint nn : neighbors_index) {
+                        if (this->flags[nn] == TYPE_S) continue; // Skip solid cells
+                        if (this->flags[nn] == TYPE_F) {
+                            uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
+                            this->f_temp[nn][i] = this->f[n][i];
+                        };
+                    };
+                };
+            };
 
             // Copiar os valores atualizados de volta para `f`
             #pragma omp parallel for
@@ -416,6 +419,7 @@ uint LBM::getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz) {
     #if defined (D2Q9)
         vector<uint> p = indexToPosition(n, Nx, Ny, Nz); // Get the position of current cell
         vector<uint> np = indexToPosition(nn, Nx, Ny, Nz); // Get the position of the neighbor cell
+
         if (np[0] == p[0] && np[1] == p[1]) return 0; // Center
 
         if (np[0] == (p[0] + 1) % Nx && np[1] == p[1]) return 1; // East
