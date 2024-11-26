@@ -311,44 +311,46 @@ void LBM::collision() {              // Collision step
 void LBM::boundary_conditions() {    // Boundary conditions
     #if defined (SIM_FLUID)
         #if defined (D2Q9)
-        #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
-        #endif
-        // Apply boundary conditions
-        #pragma omp parallel for
-        for (uint n = 0u; n < this->N; n++) {
-            if (this->flags[n] == TYPE_S) { // Solid Boundary
-                for (uint i = 0u; i < velocities; i++) {
-                    // Get opposite directions for bounce-back
-                    uint j = getOpositeDirection(i);
-                    // Reflect the distribution function
-                    // get the neighbor index
-                    uint nx = (n % this->Nx) + c[i][0];
-                    uint ny = (n / this->Nx) + c[i][1];
-                    if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny && this->flags[positionToIndex({nx, ny, 0u}, this->Nx, this->Ny, this->Nz)] != (TYPE_S || TYPE_IN || TYPE_OUT)) {
-                        uint dest = nx + ny * this->Nx;
-                        this->f[dest][j] = this->f[n][i];
-                    }
-                }
-            } else if (this->flags[n] == TYPE_IN) { // Inlet Boundary
-                // Set the distribution function based on the desired inlet density and velocity
-                vector<double> f_eq = this->compute_feq(n);
-                for (uint i = 0u; i < velocities; i++) {
-                    this->f[n][i] = f_eq[i];
-                }
-            } else if (this->flags[n] == TYPE_OUT) { // Outlet Boundary
-                // Simple outflow condition
-                uint nx = (n % this->Nx) - 1;
-                uint ny = (n / this->Nx);
-                if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
-                    uint dest = nx + ny * this->Nx;
+            // Apply boundary conditions
+            #pragma omp parallel for
+            for (uint n = 0u; n < this->N; n++) {
+                if (this->flags[n] == TYPE_S) { // Solid Boundary
                     for (uint i = 0u; i < velocities; i++) {
-                        this->f[n][i] = this->f[dest][i];
+                        // Get opposite directions for bounce-back
+                        uint j = getOpositeDirection(i);
+                        // Reflect the distribution function
+                        // get the neighbor index
+                        uint nx = (n % this->Nx) + c[i][0];
+                        uint ny = (n / this->Nx) + c[i][1];
+                        if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny && this->flags[positionToIndex({nx, ny, 0u}, this->Nx, this->Ny, this->Nz)] != (TYPE_S || TYPE_IN || TYPE_OUT)) {
+                            uint dest = nx + ny * this->Nx;
+                            this->f[dest][j] = this->f[n][i];
+                        }
+                    }
+                } else if (this->flags[n] == TYPE_IN) { // Inlet Boundary
+                    // Set the distribution function based on the desired inlet density and velocity
+                    vector<double> f_eq = this->compute_feq(n);
+                    for (uint i = 0u; i < velocities; i++) {
+                        this->f[n][i] = f_eq[i];
+                    }
+                } else if (this->flags[n] == TYPE_OUT) { // Outlet Boundary
+                    // Simple outflow condition
+                    uint nx = (n % this->Nx) - 1;
+                    uint ny = (n / this->Nx);
+                    if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
+                        uint dest = nx + ny * this->Nx;
+                        for (uint i = 0u; i < velocities; i++) {
+                            this->f[n][i] = this->f[dest][i];
+                        }
                     }
                 }
             }
-        }
+        #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
+
+        #endif
 
     #elif defined(SIM_PLASMA)
+
     #else
         std::cerr << "Error: Lattice type not defined." << std::endl;
         return;
@@ -365,13 +367,14 @@ void LBM::streaming() { // Streaming step
             // Streaming step
             #pragma omp parallel for
             for (int n = 0; n < this->N; n++) {
-                vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz); // Get the position of current cell
+                if (this->flags[n] == TYPE_S) continue; // Skip solid cells
                 vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
                 for (uint nn : neighbors_index) {
-                    vector<uint> np = indexToPosition(nn, this->Nx, this->Ny, this->Nz); // Get the position of the neighbor
-                    uint i = getDirectionIndex(vector<uint>{np[0] - p[0], np[1] - p[1], np[2] - p[2]}, this->Nx, this->Ny, this->Nz); // Get the direction index
-                    i = getOpositeDirection(i);
-                    this->f_temp[nn][i] = this->f[n][i];
+                    if (this->flags[nn] != TYPE_S) {
+                        uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
+                        i = getOpositeDirection(i);   
+                        this->f_temp[nn][i] = this->f[n][i];
+                    }
                 }
             }
 
@@ -385,6 +388,7 @@ void LBM::streaming() { // Streaming step
         #elif defined(D3Q19)
         #elif defined(D3Q27)
         #endif
+    
     #elif defined(SIM_PLASMA)
         // Plasma simulation logic goes here
     #else
@@ -408,31 +412,27 @@ void LBM::streaming() { // Streaming step
  * @param Nz The number of grid points in the z-direction (not used in this function).
  * @return uint The index of the direction vector `v` in the predefined set of direction vectors `c`.
  */
-uint LBM::getDirectionIndex(vector<uint> v, uint Nx, uint Ny, uint Nz) {
+uint LBM::getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz) {
     #if defined (D2Q9)
-        uint i = 0;
-        for (auto ci: c) {
-            if (v[0] == ci[0] && v[1] == ci[1]) {
-                return i;
-            } else {
-                i += 1;
-            }
-        };
-        return 0; // Default return value if no match is found
+        vector<uint> p = indexToPosition(n, Nx, Ny, Nz); // Get the position of current cell
+        vector<uint> np = indexToPosition(nn, Nx, Ny, Nz); // Get the position of the neighbor cell
+        if (np[0] == p[0] && np[1] == p[1]) return 0; // Center
 
-    #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
-        uint i = 0;
-        for (auto ci: c) {
-            if (v[0] == ci[0] && v[1] == ci[1] && v[2] == ci[2]) {
-                return i;
-            } else {
-                i += 1;
-            }
-        };
-        return 0; // Default return value if no match is found
-        
+        if (np[0] == (p[0] + 1) % Nx && np[1] == p[1]) return 1; // East
+        if (np[0] == p[0] && np[1] == (p[1] + 1) % Ny) return 2; // North
+        if (np[0] == (p[0] - 1 + Nx) % Nx && np[1] == p[1]) return 3; // West
+        if (np[0] == p[0] && np[1] == (p[1] - 1 + Ny) % Ny) return 4; // South
+        if (np[0] == (p[0] + 1) % Nx && np[1] == (p[1] + 1) % Ny) return 5; // Northeast
+        if (np[0] == (p[0] - 1 + Nx) % Nx && np[1] == (p[1] + 1) % Ny) return 6; // Northwest
+        if (np[0] == (p[0] - 1 + Nx) % Nx && np[1] == (p[1] - 1 + Ny) % Ny) return 7; // Southwest
+        if (np[0] == (p[0] + 1) % Nx && np[1] == (p[1] - 1 + Ny) % Ny) return 8; // Southeast
+        cerr << "Error: Direction not found." << endl;
+    #elif defined (D3Q15)
+    #elif defined (D3Q19)
+    #elif defined (D3Q27)
     #endif
-}; // getDirectionIndex
+    return -1;
+} // getDirectionIndex
 
 
 // ---------------------------------------------------------------------------------------------------------
@@ -463,7 +463,6 @@ void LBM::export_data() { // Export data to a file
             std::cerr << "Error: Unable to open file for writing." << std::endl;
         }
     } else{
-        
         std::ofstream file("exports/data.csv");
         if (file.is_open()) {
             file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";

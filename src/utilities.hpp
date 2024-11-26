@@ -20,8 +20,8 @@ using namespace std;
 
 // ---------------------------------------------------------------------------------------------------------
 // Constants
-#define pif 3.1415927f
-#define pi 3.14159265358979323846
+#define PIF 3.1415927f
+#define PI 3.14159265358979323846
 #define dt 1.0f
 #define dx 1.0f
 #define inf_float as_float(0x7F800000)
@@ -135,6 +135,13 @@ inline int positionToIndex(vector<uint> v, uint Nx, uint Ny, uint Nz) {
     return i * (Ny * Nz) + j * Nz + k;  // Formula to compute 1D index from (i, j, k)
 };
 
+
+
+
+// ---------------------------------------------------------------------------------------------------------
+
+
+
 // ---------------------------------------------------------------------------------------------------------
 
 /** getNeighbors
@@ -153,34 +160,40 @@ inline int positionToIndex(vector<uint> v, uint Nx, uint Ny, uint Nz) {
  */
 inline vector<uint> getNeighbors(uint n, uint Nx, uint Ny, uint Nz) {
     
-    int totalCells = Nx * Ny * Nz;       // Total number of cells
-    int layerSize = Ny * Nz;            // Number of elements in one layer (X direction)
-    
+    // Apply periodic boundary conditions
+    auto periodic = [&](int coord, uint max_coord) -> uint {
+        if (coord < 0) return max_coord - 1;
+        if (coord >= max_coord) return 0;
+        return coord;
+    };
+
     // Vector to store all valid neighbors
     std::vector<uint> neighbors;
 
-    // Iterate over the 3x3x3 cube around the current cell
-    for (int idx = -1; idx <= 1; ++idx) {
-        for (int idy = -1; idy <= 1; ++idy) {
-            for (int idz = -1; idz <= 1; ++idz) {
-                // Skip the center cell itself
-                if (idx == 0 && idy == 0 && idz == 0) continue;
+    #if defined(D2Q9)
+        vector<uint> p = indexToPosition(n, Nx, Ny, Nz); // Get the position of current cell
+        uint px = p[0]; uint py = p[1]; // Get the x and y coordinates of the current cell
+        // General case with periodic boundary conditions
+        neighbors.push_back(positionToIndex({periodic(px + 1, Nx), py, 0}, Nx, Ny, Nz));     // Right
+        neighbors.push_back(positionToIndex({periodic(px + 1, Nx), periodic(py + 1, Ny), 0}, Nx, Ny, Nz));   // Top Right
+        neighbors.push_back(positionToIndex({px, periodic(py + 1, Ny), 0}, Nx, Ny, Nz));        // Top
+        neighbors.push_back(positionToIndex({periodic(px - 1, Nx), periodic(py + 1, Ny), 0}, Nx, Ny, Nz));   // Top Left
+        neighbors.push_back(positionToIndex({periodic(px - 1, Nx), py, 0}, Nx, Ny, Nz));     // Left
+        neighbors.push_back(positionToIndex({periodic(px - 1, Nx), periodic(py - 1, Ny), 0}, Nx, Ny, Nz));   // Bottom Left
+        neighbors.push_back(positionToIndex({px, periodic(py - 1, Ny), 0}, Nx, Ny, Nz));        // Bottom
+        neighbors.push_back(positionToIndex({periodic(px + 1, Nx), periodic(py - 1, Ny), 0}, Nx, Ny, Nz));   // Bottom Right
 
-                // Calculate the neighbor index in 1D
-                int neighborIndex = n + idx * layerSize + idy * Nz + idz;
+        return neighbors;
 
-                // Check bounds to ensure valid neighbors
-                bool inBoundsX = (n / layerSize + idx >= 0) && (n / layerSize + idx < Nx);
-                bool inBoundsY = ((n / Nz) % Ny + idy >= 0) && ((n / Nz) % Ny + idy < Ny);
-                bool inBoundsZ = (n % Nz + idz >= 0) && (n % Nz + idz < Nz);
+    #elif defined(D3Q15)
+    
+    #elif defined(D3Q19)
 
-                if (inBoundsX && inBoundsY && inBoundsZ) {
-                    neighbors.push_back(neighborIndex);
-                }
-            }
-        }
-    }
-    return neighbors;
+    #elif defined(D3Q27)
+
+    #else
+        std::cerr << "Error: Lattice type not defined." << std::endl;
+    #endif
 };
 
 // ---------------------------------------------------------------------------------------------------------

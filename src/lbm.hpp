@@ -64,7 +64,7 @@ class LBM { // Lattice Boltzmann Method class
 
         void export_data(); // Export data to a file
 
-        uint getDirectionIndex(vector<uint> v, uint Nx, uint Ny, uint Nz);
+        uint getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz);
 
         // Constructors of variables
         vector<vector<double>> f; // Distribution functions
