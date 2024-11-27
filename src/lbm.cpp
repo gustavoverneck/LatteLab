@@ -315,26 +315,39 @@ void LBM::boundary_conditions() {    // Boundary conditions
     };
     #if defined (SIM_FLUID)
         #if defined (D2Q9)
+            f_temp = f; // Copy the distribution functions to a temporary array
             #pragma omp parallel for
             for (uint n = 0u; n < this->N; n++) {
-                if (this->flags[n] == TYPE_S) { // Solid Boundary
-                    for (uint i = 0u; i < velocities; i++) {
-                        // Get opposite directions for bounce-back
-                        uint j = getOpositeDirection(i);
-                        // Reflect the distribution function
-                        // get the neighbor index
-                        uint nx = (n % this->Nx) + c[i][0];
-                        uint ny = (n / this->Nx) + c[i][1];
-                        if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny && this->flags[positionToIndex({nx, ny, 0u}, this->Nx, this->Ny, this->Nz)] != (TYPE_S || TYPE_IN || TYPE_OUT)) {
-                            uint dest = nx + ny * this->Nx;
-                            this->f[dest][j] = this->f[n][i];
+                if (this->flags[n] == TYPE_S) { // Solid Boundary -> bounce-back
+                    vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
+                    for (uint nn : neighbors_index) {
+                        if (this->flags[nn] == TYPE_S) continue; // Skip solid cells
+                        uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
+                        if (i == 1u) { 
+                            this->f_temp[nn][getOpositeDirection(1)] = this->f[n][1];
+                            this->f_temp[nn][getOpositeDirection(5)] = this->f[n][5];
+                            this->f_temp[nn][getOpositeDirection(8)] = this->f[n][8];
+                        } else if (i == 2) {
+                            this->f_temp[nn][getOpositeDirection(2)] = this->f[n][2];
+                            this->f_temp[nn][getOpositeDirection(5)] = this->f[n][5];
+                            this->f_temp[nn][getOpositeDirection(6)] = this->f[n][6];
+                        } else if (i == 3) {
+                            this->f_temp[nn][getOpositeDirection(3)] = this->f[n][3];
+                            this->f_temp[nn][getOpositeDirection(6)] = this->f[n][5];
+                            this->f_temp[nn][getOpositeDirection(7)] = this->f[n][7];
+                        } else if (i == 4) {
+                            this->f_temp[nn][getOpositeDirection(4)] = this->f[n][4];
+                            this->f_temp[nn][getOpositeDirection(7)] = this->f[n][7];
+                            this->f_temp[nn][getOpositeDirection(8)] = this->f[n][8];
+                        } else {
+                            this->f_temp[nn][getOpositeDirection(i)] = this->f[n][i];
                         }
                     }
                 } else if (this->flags[n] == TYPE_IN) { // Inlet Boundary
                     // Set the distribution function based on the desired inlet density and velocity
                     vector<double> f_eq = this->compute_feq(n);
                     for (uint i = 0u; i < velocities; i++) {
-                        this->f[n][i] = f_eq[i];
+                        this->f_temp[n][i] = f_eq[i];
                     }
                 } else if (this->flags[n] == TYPE_OUT) { // Outlet Boundary
                     // Simple outflow condition
@@ -343,11 +356,17 @@ void LBM::boundary_conditions() {    // Boundary conditions
                     if (nx >= 0 && nx < this->Nx && ny >= 0 && ny < this->Ny) {
                         uint dest = nx + ny * this->Nx;
                         for (uint i = 0u; i < velocities; i++) {
-                            this->f[n][i] = this->f[dest][i];
+                            this->f_temp[n][i] = this->f[dest][i];
                         }
                     }
                 } else if (this->flags[n] == TYPE_F) continue;
             }
+            // Copiar os valores atualizados de volta para `f`
+            #pragma omp parallel for
+            for (int n = 0; n < this->N; n++) {
+                this->f[n] = this->f_temp[n];
+            }
+
         #elif defined (D3Q15) || defined (D3Q19) || defined (D3Q27)
 
         #endif
@@ -375,11 +394,9 @@ void LBM::streaming() { // Streaming step
                 } else {
                     vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
                     for (uint nn : neighbors_index) {
-                        if (this->flags[nn] == TYPE_S) continue; // Skip solid cells
-                        if (this->flags[nn] == TYPE_F) {
-                            uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
-                            this->f_temp[nn][i] = this->f[n][i];
-                        };
+                        if (this->flags[nn] == (TYPE_S || TYPE_IN || TYPE_OUT)) continue; // Skip solid cells
+                        uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
+                        this->f_temp[nn][i] = this->f[n][i];
                     };
                 };
             };
@@ -438,7 +455,8 @@ uint LBM::getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz) {
     #elif defined (D3Q19)
     #elif defined (D3Q27)
     #endif
-    return -1;
+    cout << "Error: Direction not found." << endl;
+    return 0;
 } // getDirectionIndex
 
 // ---------------------------------------------------------------------------------------------------------
@@ -486,7 +504,7 @@ void LBM::export_data() { // Export data to a file
         } else {
             std::cerr << "Error: Unable to open file for writing." << std::endl;
         }
-    } else{
+    } else if (!bool_export_every && this->step == this->timesteps-1) {
         std::ofstream file("exports/data.csv");
         if (file.is_open()) {
             file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";
