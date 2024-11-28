@@ -190,7 +190,7 @@ void main_setup() { // main_setup for the lbm simulation
     const float Lx = Nx / Nv;
     const float Ly = Ny / Nv;
 
-    LBM lbm(Nx, Ny, Nz, nu);
+    LBM lbm(Nx, Ny, Nz, nu, false);
     lbm.set_threads(16u);
 
     #pragma omp parallel for

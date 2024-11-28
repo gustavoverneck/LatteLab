@@ -13,6 +13,7 @@ class LBM { // Lattice Boltzmann Method class
         uint Nx=1u, Ny=1u, Nz=1u; // (global) lattice dimensions
         uint step = 0u; // Current time step
         float nu = 0.1f; // kinematic viscosity
+        bool limit_threads = false;
         bool initialized = false; // Defines if the LBM object has been initialized
 
         void evolve(); // Perform one LBM time step -> collision -> boundary conditions -> streaming
@@ -43,7 +44,7 @@ class LBM { // Lattice Boltzmann Method class
 
 
     public:                
-        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu); // Constructor
+        LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, bool limit_threads); // Constructor
 
         // Getters
         uint get_Nx() { return Nx; }
