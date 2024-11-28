@@ -89,7 +89,10 @@ void LBM::init() {
         
     #endif
 
+    // Start the lattice with the equilibrium distribution function
+    #pragma omp parallel for
     for (uint n = 0; n < this->N; n++) {
+        if (this->flags[n] == TYPE_S) continue; // Skip solid cells
         vector<double> f_eq = this->compute_feq(n);
         for (uint i = 0; i < velocities; i++) {
             this->f[n][i] = f_eq[i];
@@ -389,7 +392,7 @@ void LBM::streaming() { // Streaming step
             // Streaming step
             #pragma omp parallel for
             for (int n = 0; n < this->N; n++) {
-                if (this->flags[n] == TYPE_S) {
+                if (this->flags[n] == TYPE_S || this->flags[n] == TYPE_OUT) {
                     continue;   // Skip solid cells
                 } else {
                     vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
@@ -450,12 +453,12 @@ uint LBM::getDirectionIndex(uint n, uint nn, uint Nx, uint Ny, uint Nz) {
         if (np[0] == (p[0] - 1 + Nx) % Nx && np[1] == (p[1] + 1) % Ny) return 6; // Northwest
         if (np[0] == (p[0] - 1 + Nx) % Nx && np[1] == (p[1] - 1 + Ny) % Ny) return 7; // Southwest
         if (np[0] == (p[0] + 1) % Nx && np[1] == (p[1] - 1 + Ny) % Ny) return 8; // Southeast
-        cerr << "Error: Direction not found." << endl;
+        throw std::runtime_error("Error: Direction not found.");
     #elif defined (D3Q15)
     #elif defined (D3Q19)
     #elif defined (D3Q27)
     #endif
-    cout << "Error: Direction not found." << endl;
+    throw std::runtime_error("Error: Direction not found.");
     return 0;
 } // getDirectionIndex
 
@@ -522,3 +525,12 @@ void LBM::set_export_every(const uint interval) {
     this->export_interval = interval;
     this->bool_export_every = true;
 }
+
+
+
+
+// ---------------------------------------------------------------------------------------------------------
+void LBM::set_threads(const uint num_threads) {
+    omp_set_num_threads(num_threads);
+    cout << "Change -> Threads: " << num_threads << endl;
+} // set_threads

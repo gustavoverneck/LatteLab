@@ -69,6 +69,8 @@ class LBM { // Lattice Boltzmann Method class
         void apply(std::function<void(LBM&, uint, uint, uint, uint)> bc); // Apply boundary conditions over time steps
         std::function<void(LBM&, uint, uint, uint, uint)> bc; // Store lambda fnunction bc
 
+        void set_threads(const uint num_threads); // Set the number of threads for the LBM simulation
+
         // Constructors of variables
         vector<vector<double>> f; // Distribution functions
         vector<vector<double>> f_eq; // Distribution functions

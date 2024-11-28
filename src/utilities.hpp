@@ -13,6 +13,17 @@
 #include <omp.h>
 #include "units.hpp"
 
+
+// Platform-specific includes
+#if defined(__linux__)
+    #include <sys/prctl.h>
+#elif defined(__APPLE__)
+    #include <pthread.h>
+#elif defined(_WIN32)
+    #include <windows.h>
+#endif
+
+
 // ---------------------------------------------------------------------------------------------------------
 
 // Namespaces
