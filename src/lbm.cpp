@@ -54,7 +54,7 @@ void LBM::init() {
     
 
     
-    cout << "Initializing variables...\n";
+    cout << "\n";
     this->N = Nx*Ny*Nz; // Number of lattice cells
     this->tau = nu * 3.0f / dt + 0.5f; // Relaxation time
 
@@ -188,7 +188,9 @@ void LBM::run(const uint timesteps) {
     while (this->step <= timesteps && timesteps > 0) {
         this->step++;
         this->evolve();
+        this->print_progress();
     };
+    cout << endl;
 } // run
 
 
@@ -544,3 +546,20 @@ void LBM::set_threads(const uint num_threads) {
     omp_set_num_threads(num_threads);
     cout << "Change -> Threads: " << num_threads << endl;
 } // set_threads
+
+
+
+// ---------------------------------------------------------------------------------------------------------
+void LBM::print_progress() {
+    int barWidth = 70;
+    cout << "[";
+    int pos = barWidth * this->step / this->timesteps;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) cout << "█"; // Green color for completed part
+        else if (i == pos) cout << "░"; // Yellow color for current position
+        else cout << "░";
+    }
+    cout << "] " << int(this->step * 100.0 / this->timesteps) << " %\r";
+    cout.flush();
+
+} // print_progress

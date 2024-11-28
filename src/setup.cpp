@@ -184,14 +184,13 @@ void main_setup() { // main_setup for the lbm simulation
     const float Re = 2000.0f;
     const float nu = nu_from_reynolds(Re, 0.1f, Ny);
     const ulong N = Nx*Ny*Nz;
-    const uint timesteps = 10000;
+    const uint timesteps = 1000;
     const uint u0 = 0.1f;
     const uint Nv = 1u; // Number of vortices per dimension
     const float Lx = Nx / Nv;
     const float Ly = Ny / Nv;
 
-    LBM lbm(Nx, Ny, Nz, nu, false);
-    lbm.set_threads(16u);
+    LBM lbm(Nx, Ny, Nz, nu, true);
 
     #pragma omp parallel for
     for (ulong n = 0; n < N; n++) { // Setups grid with initial conditions

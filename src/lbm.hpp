@@ -38,10 +38,7 @@ class LBM { // Lattice Boltzmann Method class
             void compute_geq(const uint n); // Compute the equilibrium distribution function for g
         #endif
 
-        void setup_render(); // Setup the rendering for the LBM simulation
-
-        void display(); // Render the LBM simulation
-
+        void print_progress(); // Print the progress of the LBM simulation
 
     public:                
         LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, bool limit_threads); // Constructor
@@ -89,4 +86,5 @@ class LBM { // Lattice Boltzmann Method class
         double tau = 0.0f; // Relaxation time
         uint timesteps = 0u; // Number of time steps
         uint num_devices;
+
 };
