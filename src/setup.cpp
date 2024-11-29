@@ -184,8 +184,8 @@ void main_setup() { // main_setup for the lbm simulation
     const float u0 = 0.01f;
     const float nu = nu_from_reynolds(Re, u0, Ny);
     const ulong N = Nx*Ny*Nz;
-    const uint timesteps = 500;
-    const uint R = 25u; // Radius of the sphere
+    const uint timesteps = 2000;
+    const uint R = 35u; // Radius of the sphere
 
     LBM lbm(Nx, Ny, Nz, nu);
 
@@ -202,7 +202,7 @@ void main_setup() { // main_setup for the lbm simulation
         } else if (x == 0) {
             lbm.flags[n] = TYPE_OUT;
             lbm.rho[n] = 1.0f;
-            lbm.u[n][0] = u0;
+            lbm.u[n][0] = 0.0f;
             lbm.u[n][1] = 0.0f;
         } else if (r <= R || x == 0) {
             lbm.flags[n] = TYPE_S; // Solid sphere
@@ -212,7 +212,7 @@ void main_setup() { // main_setup for the lbm simulation
         } else {
             lbm.flags[n] = TYPE_F;
             lbm.rho[n] = 1.0f;
-            lbm.u[n][0] = u0;
+            lbm.u[n][0] = 0.0f;
             lbm.u[n][1] = 0.0f;
         }
     }

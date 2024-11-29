@@ -11,8 +11,8 @@ To select any of the following simulation types or setting, uncomment the corres
     THREADS Use a fixed number of threads (is overriden by ALL_THREADS)
     # WARNING: if neither is defined, the simulation will run in a single thread
 */
-    #define USE_ALL_THREADS // Use all available threads
-    #define THREADS 16 // Use a fixed number of threads (is overriden by ALL_THREADS)
+    //#define USE_ALL_THREADS // Use all available threads
+    #define THREADS 8 // Use a fixed number of threads (is overriden by ALL_THREADS)
 
     
 /*

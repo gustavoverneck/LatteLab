@@ -172,7 +172,7 @@ void LBM::start() {
 void LBM::run(const uint timesteps) {
     this->timesteps = timesteps;
     this->step = 0u;
-    cout << "Running LBM simulation for " << timesteps << " timesteps...\n";
+    cout << "Running LBM simulation for " << timesteps << " timesteps..." << endl;
     while (this->step <= timesteps && timesteps > 0) {
         this->step++;
         this->evolve();
