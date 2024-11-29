@@ -10,7 +10,6 @@ void main_setup() { // main_setup for the lbm simulation
     const float nu = nu_from_reynolds(Re, 0.1f, Nx);
     const ulong N = Nx*Ny*Nz;
     const uint timesteps = 1000;
-    omp_set_num_threads(8);
     LBM lbm(Nx, Ny, Nz, nu);
 
     // Period boundary conditions (will be applied at every time step)
@@ -62,7 +61,7 @@ void main_setup() { // main_setup for the lbm simulation
     const float nu = nu_from_reynolds(Re, 0.1f, Nx);
     const ulong N = Nx*Ny*Nz;
     const uint timesteps = 1000;
-    omp_set_num_threads(8);
+
     LBM lbm(Nx, Ny, Nz, nu);
 
     #pragma omp parallel for
@@ -181,19 +180,20 @@ void main_setup() { // main_setup for the lbm simulation
     const uint Nx = 400u; // Number of cells in the x direction
     const uint Ny = 200u; // Number of cells in the y direction
     const uint Nz = 1u;
-    const float Re = 2000.0f;
+    const float Re = 250.0f;
     const float u0 = 0.01f;
     const float nu = nu_from_reynolds(Re, u0, Ny);
     const ulong N = Nx*Ny*Nz;
-    const uint timesteps = 10000;
+    const uint timesteps = 500;
+    const uint R = 25u; // Radius of the sphere
 
-    LBM lbm(Nx, Ny, Nz, nu, true);
+    LBM lbm(Nx, Ny, Nz, nu);
 
     #pragma omp parallel for
     for (ulong n = 0; n < N; n++) { // Setups grid with initial conditions
         vector<uint> p = indexToPosition(n, Nx, Ny, Nz);
         uint x = p[0]; uint y = p[1]; uint z = p[2];
-        float r = sqrt((x - 75) * (x - 75) + (y - Ny / 2) * (y - Ny / 2));
+        float r = sqrt((x - 50) * (x - 50) + (y - Ny / 2) * (y - Ny / 2));
         if (x == 1) {
             lbm.flags[n] = TYPE_IN;
             lbm.rho[n] = 1.0f;
@@ -204,7 +204,7 @@ void main_setup() { // main_setup for the lbm simulation
             lbm.rho[n] = 1.0f;
             lbm.u[n][0] = u0;
             lbm.u[n][1] = 0.0f;
-        } else if (r <= 18u || x == 0) {
+        } else if (r <= R || x == 0) {
             lbm.flags[n] = TYPE_S; // Solid sphere
             lbm.rho[n] = 1.0f;
             lbm.u[n][0] = 0.0f;

@@ -5,12 +5,16 @@ To select any of the following simulation types or setting, uncomment the corres
 */
 
 /*
-    Define graphical or data output
+    Threads settings
+
+    USE_ALL_THREADS Use all available threads
+    THREADS Use a fixed number of threads (is overriden by ALL_THREADS)
+    # WARNING: if neither is defined, the simulation will run in a single thread
 */
-    #define GRAPHICAL_OUTPUT // Not implemented
-    //#define DATA_OUTPUT // Not implemented
+    #define USE_ALL_THREADS // Use all available threads
+    #define THREADS 16 // Use a fixed number of threads (is overriden by ALL_THREADS)
 
-
+    
 /*
     Simulation type: SIM_FLUID or SIM_PLASMA
 */
@@ -117,6 +121,22 @@ typedef unsigned long ulong;
     #define def_w {def_w0, def_ws, def_ws, def_ws, def_ws, def_ws, def_ws, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_we, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc, def_wc}
 
 #endif
+
+
+// Set the number of threads
+#ifdef USE_ALL_THREADS
+    #ifdef THREADS
+        #undef THREADS
+    #endif
+    #define THREADS omp_get_max_threads()
+#elif defined(THREADS) && !defined(ALL_THREADS)
+    // Threads defined by the user will be used
+#else
+    #define THREADS 1
+#endif
+
+
+
 
 // -----------------------------------------------------------------------------------------------
 // Security checks

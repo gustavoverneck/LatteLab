@@ -9,8 +9,8 @@
  * @param Nz The number of cells in the z-dimension.
  * @param nu The kinematic viscosity of the fluid.
  */
-LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu, bool limit_threads) 
-    :Nx(Nx), Ny(Ny), Nz(Nz), nu(nu), limit_threads(limit_threads){
+LBM::LBM(const uint Nx, const uint Ny, const uint Nz, const float nu) 
+    :Nx(Nx), Ny(Ny), Nz(Nz), nu(nu) {
         this->start();
 } // LBM
 
@@ -39,22 +39,10 @@ void LBM::init() {
 // Initialize the lattice
     
     // Set the number of threads to 8 if the number of threads is greater than or equal to 8
-    if (limit_threads){
-        int num_threads = omp_get_max_threads();
-        if (num_threads >= 8) {
-            omp_set_num_threads(8);
-        } else {
-            omp_set_num_threads(omp_get_max_threads());
-        };
-        cout << "Threads: " << omp_get_max_threads() << endl;
-    } else {
-        omp_set_num_threads(omp_get_max_threads());
-        cout << "Threads: " << omp_get_max_threads() << endl;
-    }
-    
+    omp_set_num_threads(THREADS);
+    cout << "Threads: " << omp_get_max_threads() << endl;
 
-    
-    cout << "\n";
+
     this->N = Nx*Ny*Nz; // Number of lattice cells
     this->tau = nu * 3.0f / dt + 0.5f; // Relaxation time
 
@@ -533,19 +521,6 @@ void LBM::set_export_every(const uint interval) {
     this->export_interval = interval;
     this->bool_export_every = true;
 }
-
-
-
-
-// ---------------------------------------------------------------------------------------------------------
-void LBM::set_threads(const uint num_threads) {
-    if (num_threads == 0) {
-        cout << "Change -> Threads: " << omp_get_max_threads() << endl;
-        return;
-    }
-    omp_set_num_threads(num_threads);
-    cout << "Change -> Threads: " << num_threads << endl;
-} // set_threads
 
 
 
