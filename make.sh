@@ -37,7 +37,12 @@ if [ $? -eq 0 ]; then
     end_time=$(date +%s%3N)    # Capture the end time in milliseconds
     duration=$(( end_time - start_time ))  # Calculate the duration in milliseconds
     seconds=$(echo "scale=3; $duration / 1000" | bc)
-    echo "Finished. Total execution time: $seconds seconds."
+    # Convert milliseconds to hours, minutes, and seconds
+    hours=$(( duration / 3600000 ))
+    minutes=$(( (duration % 3600000) / 60000 ))
+    seconds=$(echo "scale=3; (${duration} % 60000) / 1000" | bc)
+
+    echo "Finished. Total execution time: ${hours}h ${minutes}m ${seconds}s."
 
 else
     echo "Compilation failed."
