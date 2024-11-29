@@ -178,17 +178,14 @@ void main_setup() { // main_setup for the lbm simulation
 
 //  2D Von-Karman vortex setup
 void main_setup() { // main_setup for the lbm simulation
-    const uint Nx = 400u;
-    const uint Ny = 200u;
+    const uint Nx = 400u; // Number of cells in the x direction
+    const uint Ny = 200u; // Number of cells in the y direction
     const uint Nz = 1u;
     const float Re = 2000.0f;
-    const float nu = nu_from_reynolds(Re, 0.1f, Ny);
+    const float u0 = 0.01f;
+    const float nu = nu_from_reynolds(Re, u0, Ny);
     const ulong N = Nx*Ny*Nz;
-    const uint timesteps = 1000;
-    const uint u0 = 0.1f;
-    const uint Nv = 1u; // Number of vortices per dimension
-    const float Lx = Nx / Nv;
-    const float Ly = Ny / Nv;
+    const uint timesteps = 10000;
 
     LBM lbm(Nx, Ny, Nz, nu, true);
 
@@ -200,12 +197,12 @@ void main_setup() { // main_setup for the lbm simulation
         if (x == 1) {
             lbm.flags[n] = TYPE_IN;
             lbm.rho[n] = 1.0f;
-            lbm.u[n][0] = 0.1f;
+            lbm.u[n][0] = u0;
             lbm.u[n][1] = 0.0f;
         } else if (x == 0) {
             lbm.flags[n] = TYPE_OUT;
             lbm.rho[n] = 1.0f;
-            lbm.u[n][0] = 0.0f;
+            lbm.u[n][0] = u0;
             lbm.u[n][1] = 0.0f;
         } else if (r <= 18u || x == 0) {
             lbm.flags[n] = TYPE_S; // Solid sphere
@@ -215,7 +212,7 @@ void main_setup() { // main_setup for the lbm simulation
         } else {
             lbm.flags[n] = TYPE_F;
             lbm.rho[n] = 1.0f;
-            lbm.u[n][0] = 0.0f;
+            lbm.u[n][0] = u0;
             lbm.u[n][1] = 0.0f;
         }
     }

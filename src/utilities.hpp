@@ -12,6 +12,7 @@
 #include <cmath>
 #include <omp.h>
 #include "units.hpp"
+#include <chrono>
 
 
 // Platform-specific includes

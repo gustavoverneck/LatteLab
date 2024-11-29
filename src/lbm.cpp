@@ -551,15 +551,23 @@ void LBM::set_threads(const uint num_threads) {
 
 // ---------------------------------------------------------------------------------------------------------
 void LBM::print_progress() {
-    int barWidth = 70;
-    cout << "[";
-    int pos = barWidth * this->step / this->timesteps;
-    for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) cout << "█"; // Green color for completed part
-        else if (i == pos) cout << "░"; // Yellow color for current position
-        else cout << "░";
-    }
-    cout << "] " << int(this->step * 100.0 / this->timesteps) << " %\r";
-    cout.flush();
+    static auto start_time = std::chrono::high_resolution_clock::now();
+    auto current_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = current_time - start_time;
+    double estimated_total_time = elapsed.count() * this->timesteps / this->step;
+    double estimated_time_left = estimated_total_time - elapsed.count();
 
+    int elapsed_hours = int(elapsed.count()) / 3600;
+    int elapsed_minutes = (int(elapsed.count()) % 3600) / 60;
+    int elapsed_seconds = int(elapsed.count()) % 60;
+
+    int left_hours = int(estimated_time_left) / 3600;
+    int left_minutes = (int(estimated_time_left) % 3600) / 60;
+    int left_seconds = int(estimated_time_left) % 60;
+
+    cout << "\r"; // Clear the current line
+    cout << "Step: " << this->step << " / " << this->timesteps;
+    cout << " | Elapsed time: " << elapsed_hours << "h " << elapsed_minutes << "m " << elapsed_seconds << "s";
+    cout << " | ETC: " << left_hours << "h " << left_minutes << "m " << left_seconds << "s";
+    cout.flush();
 } // print_progress
