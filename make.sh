@@ -12,14 +12,10 @@ rm -rf bin/LatteLab
 
 # Compile the code with OpenMP support
 echo "Compiling the code..."
-start_time=$(date +%s%3N)  # Capture the start time in milliseconds
 
 # Compile using g++ with OpenMP support (-fopenmp)
 g++ src/*.cpp -o bin/LatteLab -std=c++17 -fopenmp
 
-end_time=$(date +%s%3N)    # Capture the end time in milliseconds
-duration=$(( end_time - start_time ))  # Calculate the duration in milliseconds
-seconds=$(echo "scale=3; $duration / 1000" | bc)
 
 # Check if compilation was successful
 if [ $? -eq 0 ]; then
@@ -27,22 +23,10 @@ if [ $? -eq 0 ]; then
     echo "Executing LatteLab..."
     echo " "
 
-    # Time the execution of the program
-    start_time=$(date +%s%3N)  # Capture the start time in milliseconds
-
     # Run the executable
     ./bin/LatteLab
 
-    # Capture the end time and calculate the duration
-    end_time=$(date +%s%3N)    # Capture the end time in milliseconds
-    duration=$(( end_time - start_time ))  # Calculate the duration in milliseconds
-    seconds=$(echo "scale=3; $duration / 1000" | bc)
-    # Convert milliseconds to hours, minutes, and seconds
-    hours=$(( duration / 3600000 ))
-    minutes=$(( (duration % 3600000) / 60000 ))
-    seconds=$(echo "scale=3; (${duration} % 60000) / 1000" | bc)
-
-    echo "Finished. Total execution time: ${hours}h ${minutes}m ${seconds}s."
+    echo "Finished."
 
 else
     echo "Compilation failed."
