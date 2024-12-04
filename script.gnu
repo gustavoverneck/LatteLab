@@ -13,8 +13,8 @@ set title "Streamlines"
 set xlabel "x (lattice units)"
 set ylabel "y (lattice units)"
 
-set xrange [0:399]
-set yrange [0:199]
+#set xrange [0:127]
+#set yrange [0:127]
 
 set key off
 
@@ -26,8 +26,8 @@ set arrow from 0,0 to 1,1 nohead lw 0.5
 #plot "exports/data_1600.csv" skip 1 u 1:2:(sqrt($5**2 + $6**2)) w image
 
 # Loop to generate frames
-do for [i=1:30] {
+do for [i=1:10000] {
     unset key
     set output sprintf('frames/frame_%03d.png', i)
-    plot sprintf("exports/data_%d00.csv", i) skip 1 u 1:2:(sqrt($5**2 + $6**2)) w image
+    plot sprintf("exports/data_%d.csv", i) skip 1 u 1:2:(sqrt($5**2 + $6**2)) w image
 }
