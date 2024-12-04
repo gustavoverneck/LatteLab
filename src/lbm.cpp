@@ -492,12 +492,13 @@ void LBM::apply(std::function<void(LBM&, uint, uint, uint, uint)> bc) {
 void LBM::export_data() { // Export data to a file
     // Export data to a file
     if (bool_export_every && (this->step % this->export_interval == 0 || this->step == 1)) {
-        std::ofstream file("exports/data_" + std::to_string(step) + ".csv");
+        current_frame += 1u;
+        std::ofstream file("exports/data_" + std::to_string(current_frame) + ".csv");
         if (file.is_open()) {
             file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";
-            for (uint n = 0; n < this->N; n++) {
+            for (ulong n = 0; n < this->N; n++) {
                 vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz);
-                file << p[0] << ",\t" << p[1] << ",\t" << p[2] << ",\t" << this->rho[n] << ",\t" << this->u[n][0] << ",\t" << this->u[n][1] << "\n";
+                file << std::fixed << setprecision(15) << p[0] << ",\t" << p[1] << ",\t" << p[2] << ",\t" << this->rho[n] << ",\t" << this->u[n][0] << ",\t" << this->u[n][1] << "\n";
             };
             file.close();
         } else {
@@ -507,9 +508,9 @@ void LBM::export_data() { // Export data to a file
         std::ofstream file("exports/data.csv");
         if (file.is_open()) {
             file << "x" << ",\t" << "y" << ",\t" << "z" << ",\t" << "rho" << ",\t" << "u_x" << ",\t" << "u_y" << "\n";
-            for (uint n = 0; n < this->N; n++) {
+            for (ulong n = 0; n < this->N; n++) {
                 vector<uint> p = indexToPosition(n, this->Nx, this->Ny, this->Nz);
-                file << p[0] << ",\t" << p[1] << ",\t" << p[2] << ",\t" << this->rho[n] << ",\t" << this->u[n][0] << ",\t" << this->u[n][1] << "\n";
+                file << std::fixed << setprecision(15) << p[0] << ",\t" << p[1] << ",\t" << p[2] << ",\t" << this->rho[n] << ",\t" << this->u[n][0] << ",\t" << this->u[n][1] << "\n";
             };
             file.close();
         } else {
