@@ -80,18 +80,18 @@ void main_setup() { // main_setup for the lbm simulation
 
 
 
-
+/*
 //  2D Von-Karman vortex setup
 void main_setup() { // main_setup for the lbm simulation
-    const uint R = 16u; // Radius of the sphere
-    const uint Nx = 32u*R; // Number of cells in the x direction
+    const uint R = 8u; // Radius of the sphere
+    const uint Nx = 16u*R; // Number of cells in the x direction
     const uint Ny = 16u*R; // Number of cells in the y direction
     const uint Nz = 1u;
     const float Re = 250.0f;
-    const float u0 = 0.10f;
+    const float u0 = 0.01f;
     const float nu = nu_from_reynolds(Re, u0, Ny);
     const ulong N = Nx*Ny*Nz;
-    const uint timesteps = 1000;
+    const uint timesteps = 50000;
 
     LBM lbm(Nx, Ny, Nz, nu);
 

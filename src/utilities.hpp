@@ -227,7 +227,7 @@ inline vector<uint> getNeighbors(uint n, uint Nx, uint Ny, uint Nz) {
  *       - D3Q19: valid indices are 0 to 18
  *       - D3Q27: valid indices are 0 to 26
  */
-inline int getOpositeDirection(int i) {
+inline int getOppositeDirection(int i) {
     #if defined(D2Q9)   
         switch (i) {
             case 0: return 0;

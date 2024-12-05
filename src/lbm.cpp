@@ -173,7 +173,7 @@ void LBM::run(const uint timesteps) {
     this->timesteps = timesteps;
     this->step = 0u;
     cout << "Running LBM simulation for " << timesteps << " timesteps..." << endl;
-    while (this->step <= timesteps && timesteps > 0) {
+    while (this->step < timesteps && timesteps > 0) {
         this->step++;
         this->evolve();
         this->print_progress();
@@ -321,26 +321,10 @@ void LBM::boundary_conditions() {    // Boundary conditions
                     vector<uint> neighbors_index = getNeighbors(n, this->Nx, this->Ny, this->Nz);
                     for (uint nn : neighbors_index) {
                         if (this->flags[nn] == TYPE_S) continue; // Skip solid cells
-                        uint i = getDirectionIndex(n, nn, this->Nx, this->Ny, this->Nz); // Get the direction index
-                        if (i == 1u) { 
-                            this->f_temp[nn][getOpositeDirection(1)] = this->f[n][1];
-                            this->f_temp[nn][getOpositeDirection(5)] = this->f[n][5];
-                            this->f_temp[nn][getOpositeDirection(8)] = this->f[n][8];
-                        } else if (i == 2) {
-                            this->f_temp[nn][getOpositeDirection(2)] = this->f[n][2];
-                            this->f_temp[nn][getOpositeDirection(5)] = this->f[n][5];
-                            this->f_temp[nn][getOpositeDirection(6)] = this->f[n][6];
-                        } else if (i == 3) {
-                            this->f_temp[nn][getOpositeDirection(3)] = this->f[n][3];
-                            this->f_temp[nn][getOpositeDirection(6)] = this->f[n][5];
-                            this->f_temp[nn][getOpositeDirection(7)] = this->f[n][7];
-                        } else if (i == 4) {
-                            this->f_temp[nn][getOpositeDirection(4)] = this->f[n][4];
-                            this->f_temp[nn][getOpositeDirection(7)] = this->f[n][7];
-                            this->f_temp[nn][getOpositeDirection(8)] = this->f[n][8];
-                        } else {
-                            this->f_temp[nn][getOpositeDirection(i)] = this->f[n][i];
+                        for (uint i = 0u; i < velocities; i++) {
+                            this->f_temp[nn][i] = this->f[nn][getOppositeDirection(i)];
                         }
+                        
                     }
                 } else if (this->flags[n] == TYPE_IN) { // Inlet Boundary
                     // Set the distribution function based on the desired inlet density and velocity
